@@ -9,6 +9,13 @@ struct PlayerLayerView: UIViewRepresentable {
     final class PlayerContainerView: UIView {
         override class var layerClass: AnyClass { AVPlayerLayer.self }
         var playerLayer: AVPlayerLayer { layer as! AVPlayerLayer }
+
+        override func layoutSubviews() {
+            super.layoutSubviews()
+            // 首次布局后 layer 才有非零尺寸，此时画中画的 content source
+            // 才建得起来（makeUIView 那一刻尺寸是 0），所以要补一次 attach
+            PiPManager.shared.attach(playerLayer: playerLayer)
+        }
     }
 
     func makeUIView(context: Context) -> PlayerContainerView {

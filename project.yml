@@ -55,6 +55,11 @@ targets:
           - UIInterfaceOrientationLandscapeLeft
           - UIInterfaceOrientationLandscapeRight
         NSPhotoLibraryAddUsageDescription: 用于保存图片
+        # 画中画必需：audio 让退后台后音频继续（否则小窗会立刻被系统收掉），
+        # picture-in-picture 声明本 App 使用系统小窗能力。
+        UIBackgroundModes:
+          - audio
+          - picture-in-picture
         NSAppTransportSecurity:
           NSAllowsArbitraryLoads: true
           NSAllowsArbitraryLoadsInWebContent: true

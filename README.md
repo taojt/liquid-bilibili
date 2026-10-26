@@ -120,6 +120,8 @@ xcrun simctl spawn $UDID defaults write $APP debugTripleBurst -bool YES       # 
 xcrun simctl spawn $UDID defaults write $APP debugCommentComposer -bool YES   # 直接弹出评论输入框
 xcrun simctl spawn $UDID defaults write $APP debugCollapsed -bool YES         # 首页停在「顶栏收起」态
 xcrun simctl spawn $UDID defaults write $APP debugScroll -bool YES            # 列表首屏滚到中段（复现滚动后状态）
+xcrun simctl spawn $UDID defaults write $APP debugPip -bool YES               # 起播后自动进画中画小窗
+xcrun simctl spawn $UDID defaults write $APP debugDiag -bool YES              # 播放区显示画中画/全屏诊断 HUD
 xcrun simctl launch $UDID $APP
 ```
 
@@ -337,6 +339,8 @@ SwiftUI 的 `.task` 在视图消失或切 Tab 时会被取消，`URLSession` 随
 
 另外别忘了 `beginGeneratingDeviceOrientationNotifications()`——不发这个通知，`UIDevice.current.orientation` 永远是 `.unknown`。
 
+还有一个必踩的坑：**方向同步只认「变化」，不能按绝对方向处理**。点全屏按钮后 `requestGeometryUpdate` 把界面转过去，期间系统会补发一条 orientation 通知，此刻物理设备往往还没转过来（仍是 portrait）——如果按绝对值处理，这条通知会把刚切进来的全屏立刻打回竖屏，再叠加系统已经横过来的界面，就是「页面内容旋转 90° 的错乱画面」，用户看起来就是「全屏按钮没反应」。解法是记一个 `lastSyncedOrientation`，方向没变就直接 return，手动切换时把当前方向记成「已同步」。
+
 ### 直播
 
 列表走老的 `room/v1/area/getRoomList`（新版 `xlive/.../second/getList` 现在要额外风控参数，直连返回 -352）。
@@ -433,7 +437,11 @@ GET .../live_xxx-1793013747.ts   无 Referer → 200
 
 「退后台自动进小窗」靠 `canStartPictureInPictureAutomaticallyFromInline = true`：App 失活时系统自动起小窗、回前台自动还原，不用监听通知。前提是三件套齐了——`UIBackgroundModes` 里加 `audio` + `picture-in-picture`、`AVAudioSession` 类别 `.playback`（引擎起播时已设）、小窗控制器在起播前挂好。
 
+第四件套是**控制器必须懒创建**：`makeUIView` 那一刻 layer 尺寸是 0，此时创建的 content source 起不来小窗（`isPictureInPicturePossible` 恒为 false，`startPictureInPicture()` 静默失败、无任何报错）。所以 `attach` 只登记 layer，等 `layoutSubviews` 补一次 attach、layer 有了非零尺寸才真正建控制器。另外 `startPictureInPicture()` 要等 `isPictureInPicturePossible == true` 才生效，自动进小窗会带一个 pending 标记，挂 KVO 等 possible 翻 true 再补发。
+
 iOS 27 SDK 的两个坑：`ContentSource(playerLayer:playbackDelegate:)` 和 `AVPictureInPictureSamplePlaybackDelegate` 被移除了（playerLayer 来源的协议方法本来就全是可选，直接删掉即可）；`canStartPictureInPictureAutomaticallyOnDeactivation` 改名为 `...FromInline`；`stopPictureInPicture(withCompletion:)` 变成无参的 `stopPictureInPicture()`。
+
+真机上没法读日志，排查小窗问题时用 `debugDiag` 把三态（`sup`/`pos`/`act`）直接打在播放区上截图看。
 
 小窗激活时本地画面是黑的，播放区会盖一层「小窗播放中」占位——内容源 layer 必须保持存活，只能挡视觉不能移除。模拟器 `isPictureInPictureSupported()` 恒为 false，此功能仅真机可用。
 

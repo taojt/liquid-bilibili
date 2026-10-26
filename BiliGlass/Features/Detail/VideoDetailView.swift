@@ -39,6 +39,9 @@ struct VideoDetailView: View {
     private var pip: PiPManager { PiPManager.shared }
 
     @State private var isFullscreen = false
+    /// 上一次同步到布局的物理方向。方向同步只认「变化」，防止
+    /// 转屏过程中补发的同方向通知把全屏状态打回去
+    @State private var lastSyncedOrientation: UIDeviceOrientation = .unknown
     @State private var controlsVisible = true
     @State private var scrubbing = false
     @State private var scrubValue: Double = 0
@@ -64,11 +67,15 @@ struct VideoDetailView: View {
         .statusBarHidden(isFullscreen)
         .task { await load() }
         .onChange(of: engine.isReady) { _, ready in
-            // 调试：模拟器没法按 Home 键也没法点按钮，自动进一次小窗截图验证
-            guard ready, DebugEntry.pip else { return }
+            guard ready else { return }
+            // 调试：模拟器没法按 Home 键也没法点按钮，自动走一次对应动作截图验证
             Task {
                 try? await Task.sleep(nanoseconds: 1_200_000_000)
-                pip.startIfPossible()
+                if DebugEntry.pip {
+                    pip.startIfPossible()
+                } else if DebugEntry.fullscreen {
+                    enterFullscreen()
+                }
             }
         }
         .onAppear {
@@ -156,7 +163,27 @@ struct VideoDetailView: View {
             .overlay(alignment: .bottom) { inlineBottomBar }
             .overlay(alignment: .topLeading) { backButton }
             .overlay(alignment: .topTrailing) { inlineControlCluster }
+            .overlay(alignment: .topLeading) { diagHud }
             .clipped()
+    }
+
+    /// 只能在真机上靠截图排查时开（`debugDiag`）：把画中画三态和全屏态打在画面上
+    @ViewBuilder
+    private var diagHud: some View {
+        if DebugEntry.diag {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(pip.debugText)
+                Text("fs=\(isFullscreen) ready=\(engine.isReady) play=\(engine.isPlaying)")
+                Text("dev=\(String(describing: UIDevice.current.orientation.rawValue))")
+            }
+            .font(.system(size: 20, weight: .bold, design: .monospaced))
+            .foregroundStyle(.green)
+            .padding(10)
+            .background(.black.opacity(0.85), in: .rect(cornerRadius: 8))
+            .allowsHitTesting(false)
+            .frame(maxWidth: .infinity, alignment: .top)
+            .padding(.top, 120)
+        }
     }
 
     /// 小窗播放中的占位：保持层叠结构（内容源 layer 必须活着），只挡视觉
@@ -463,6 +490,20 @@ struct VideoDetailView: View {
                 .padding(.horizontal, 18)
                 .padding(.vertical, 10)
                 .transition(.opacity)
+            }
+
+            if DebugEntry.diag {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(pip.debugText)
+                    Text("fs=\(isFullscreen) ready=\(engine.isReady) play=\(engine.isPlaying)")
+                }
+                .font(.system(size: 20, weight: .bold, design: .monospaced))
+                .foregroundStyle(.green)
+                .padding(10)
+                .background(.black.opacity(0.85), in: .rect(cornerRadius: 8))
+                .allowsHitTesting(false)
+                .frame(maxWidth: .infinity, alignment: .top)
+                .padding(.top, 60)
             }
         }
         .contentShape(.rect)
@@ -868,6 +909,9 @@ struct VideoDetailView: View {
 
     /// 手动点全屏按钮：切布局 + 请求横屏
     private func enterFullscreen() {
+        // 把当前物理方向记成"已同步"，转屏过程中补发的同方向通知就不会
+        // 把刚切进来的全屏又打回竖屏
+        lastSyncedOrientation = UIDevice.current.orientation
         controlsVisible = true
         withAnimation(.easeInOut(duration: 0.25)) {
             isFullscreen = true
@@ -877,6 +921,7 @@ struct VideoDetailView: View {
 
     /// 手动点退出按钮：切布局 + 请求竖屏
     private func exitFullscreen() {
+        lastSyncedOrientation = UIDevice.current.orientation
         withAnimation(.easeInOut(duration: 0.25)) {
             isFullscreen = false
         }
@@ -888,9 +933,17 @@ struct VideoDetailView: View {
     /// 这里**不请求**任何转屏——mask 已经放开，系统会自己把界面转过去，
     /// 我们只负责把布局切成全屏/竖屏两种形态。如果这里再调
     /// requestGeometryUpdate，反而会和用户的手势打架。
+    ///
+    /// 关键细节：只响应**方向变化**，不按绝对方向处理。点全屏按钮时
+    /// `requestGeometryUpdate` 会把界面转过去，期间系统会补发一条
+    /// orientation 通知（此刻物理设备往往还没转过来，仍是 portrait），
+    /// 如果按绝对值处理，这条通知会把刚进的全屏立刻打回竖屏——
+    /// 表现为「全屏按钮点了没反应」。
     private func syncWithDeviceOrientation() {
         let orientation = UIDevice.current.orientation
         guard orientation.isLandscape || orientation.isPortrait else { return }
+        guard orientation != lastSyncedOrientation else { return }
+        lastSyncedOrientation = orientation
 
         if orientation.isLandscape {
             guard !isFullscreen else { return }
@@ -924,10 +977,6 @@ struct VideoDetailView: View {
             Task { await comment.load(aid: aid) }
             if startAt > 0 {
                 showResumeHint(startAt)
-            }
-            if DebugEntry.fullscreen {
-                try? await Task.sleep(nanoseconds: 2_500_000_000)
-                enterFullscreen()
             }
             if DebugEntry.danmakuSettings {
                 try? await Task.sleep(nanoseconds: 1_500_000_000)

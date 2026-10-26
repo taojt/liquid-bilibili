@@ -103,6 +103,11 @@ enum DebugEntry {
         UserDefaults.standard.bool(forKey: "debugPip")
     }
 
+    /// 播放区左上角挂一行诊断文字（画中画三态 / 全屏态 / 引擎态），真机没法读日志
+    static var diag: Bool {
+        UserDefaults.standard.bool(forKey: "debugDiag")
+    }
+
     /// 首页启动后直接推进搜索页
     static var search: Bool {
         UserDefaults.standard.bool(forKey: "debugSearch")
@@ -146,7 +151,8 @@ enum DebugEntry {
             "debugMySpace", "debugMySpaceTab", "debugDanmakuSettings",
             "debugDanmakuArea", "debugDanmakuOpacity", "debugDanmakuInfo",
             "debugComment", "debugTripleBurst", "debugKeyword", "debugRate",
-            "debugCommentComposer", "debugCollapsed", "debugScroll", "debugPip"
+            "debugCommentComposer", "debugCollapsed", "debugScroll", "debugPip",
+            "debugDiag"
         ] {
             defaults.removeObject(forKey: key)
         }
