@@ -35,6 +35,9 @@ struct VideoDetailView: View {
     /// 弹幕外观偏好（不透明度 / 显示区域）全局共用一份
     private var danmakuSettings: DanmakuSettings { DanmakuSettings.shared }
 
+    /// 画中画（小窗播放）管理，全局单例
+    private var pip: PiPManager { PiPManager.shared }
+
     @State private var isFullscreen = false
     @State private var controlsVisible = true
     @State private var scrubbing = false
@@ -60,6 +63,14 @@ struct VideoDetailView: View {
         .hidesFloatingTabBar()
         .statusBarHidden(isFullscreen)
         .task { await load() }
+        .onChange(of: engine.isReady) { _, ready in
+            // 调试：模拟器没法按 Home 键也没法点按钮，自动进一次小窗截图验证
+            guard ready, DebugEntry.pip else { return }
+            Task {
+                try? await Task.sleep(nanoseconds: 1_200_000_000)
+                pip.startIfPossible()
+            }
+        }
         .onAppear {
             // 播放页驻留期间放开旋转，手机转横屏就进全屏
             OrientationLock.allowRotation()
@@ -69,6 +80,8 @@ struct VideoDetailView: View {
             UIDevice.current.endGeneratingDeviceOrientationNotifications()
             OrientationLock.lockPortrait()
             isFullscreen = false
+            // 先收小窗再停引擎：反过来小窗里会定格一帧黑屏画面
+            pip.stopIfNeeded()
             engine.stop()
         }
         .onReceive(NotificationCenter.default.publisher(for: UIDevice.orientationDidChangeNotification)) { _ in
@@ -130,6 +143,13 @@ struct VideoDetailView: View {
                     coverPlaceholder
                 }
             }
+            .overlay {
+                // 小窗激活时盖住本地画面：系统小窗在渲染视频，
+                // 本地 layer 这时候是黑的，铺一层说明避免像坏掉一样
+                if pip.isActive {
+                    pipPlaceholder
+                }
+            }
             .overlay { danmakuLayer }
             .overlay { statusOverlay }
             .overlay(alignment: .center) { centerPlayButton }
@@ -137,6 +157,25 @@ struct VideoDetailView: View {
             .overlay(alignment: .topLeading) { backButton }
             .overlay(alignment: .topTrailing) { inlineControlCluster }
             .clipped()
+    }
+
+    /// 小窗播放中的占位：保持层叠结构（内容源 layer 必须活着），只挡视觉
+    private var pipPlaceholder: some View {
+        ZStack {
+            Color.black
+            VStack(spacing: 10) {
+                Image(systemName: "pip.exit")
+                    .font(.system(size: 24, weight: .medium))
+                    .foregroundStyle(Theme.pink)
+                Text("小窗播放中")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(Theme.ink)
+                Text("回到本页或从小窗点还原按钮继续看")
+                    .font(.system(size: 11))
+                    .foregroundStyle(Theme.inkFaint)
+            }
+        }
+        .transition(.opacity)
     }
 
     // MARK: - 弹幕层
@@ -256,15 +295,27 @@ struct VideoDetailView: View {
         .disabled(!engine.isReady)
     }
 
-    /// 竖屏下的控制簇：弹幕开关 / 弹幕设置 / 倍速 / 全屏
+    /// 竖屏下的控制簇：弹幕开关 / 弹幕设置 / 倍速 / 小窗 / 全屏
     private var inlineControlCluster: some View {
         HStack(spacing: 6) {
             danmakuToggle
             danmakuSettingsButton
             speedMenu
+            pipButton
             fullscreenButton
         }
         .padding(10)
+    }
+
+    /// 小窗播放按钮。系统不支持（或播放层还没挂上）时隐藏而不是禁用，
+    /// 保持控制簇紧凑。
+    @ViewBuilder
+    private var pipButton: some View {
+        if pip.isAvailable, engine.isReady {
+            GlassIconButton(systemName: "pip.enter", size: 34) {
+                pip.toggle()
+            }
+        }
     }
 
     // MARK: - 弹幕 / 倍速控件
@@ -394,6 +445,12 @@ struct VideoDetailView: View {
                     .ignoresSafeArea()
             }
 
+            // 小窗激活时盖住全屏画面（与竖屏内嵌同理）
+            if pip.isActive {
+                pipPlaceholder
+                    .ignoresSafeArea()
+            }
+
             fullscreenDanmakuLayer
                 .allowsHitTesting(false)
 
@@ -440,6 +497,7 @@ struct VideoDetailView: View {
             danmakuToggle
             danmakuSettingsButton
             speedMenu
+            pipButton
             qualityMenu
         }
         .padding(.horizontal, 12)

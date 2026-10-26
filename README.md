@@ -10,13 +10,14 @@
 | --- | --- |
 | 首页 | 推荐 / 关注 / 热门 / 直播四流，左右滑动切换；上滑自动折叠顶栏，搜索框缩成图标；悬浮玻璃底栏，内容从底下穿过 |
 | 搜索 | 热搜词 + 综合搜索，WBI 签名；结果双列瀑布流，点击进详情 |
-| 视频播放 | AVPlayer 硬解（VideoToolbox），断点续播（服务端历史 + 本地记录双保险），倍速播放（0.5x ~ 2.0x） |
+| 视频播放 | AVPlayer 硬解（VideoToolbox），断点续播（服务端历史 + 本地记录双保险），倍速播放（0.5x ~ 2.0x），**画中画小窗（手动按钮 / 退后台自动进入）** |
 | 弹幕 | 滚动 / 顶部 / 底部弹幕，轨道防重叠调度；不透明度与显示区域（全屏 / 上半区 / 下半区）设置；直播实时弹幕（WebSocket） |
 | 互动 | 点赞 / 投币 / 收藏；**长按点赞一键三连**（带扇形散开动效与触觉反馈） |
 | 评论区 | 一级评论 + 楼中楼懒加载、点赞、回复、排序切换，可从发言人进入其主页 |
 | 社区 | 关注 UP 主动态时间线（图文 + 转发）、UP 主个人主页与投稿列表、我的主页（资料 / 账号属性 / 历史 / 收藏 / 点赞 / 收藏夹管理） |
 | 直播 | 直播间列表、拉流播放、实时弹幕、手动 / 转屏全屏 |
 | 账号 | 扫码登录，Cookie 会话持久化，冷启动自动恢复登录态 |
+| 手势 | 所有被推入的页面支持**左滑返回**（导航栏隐藏后系统手势被禁用，已修复） |
 | 外观 | 液态玻璃（iOS 26+ `glassEffect`）；跟随系统 / 白天 / 夜间三种模式，明暗双套 App 图标 |
 
 ## 示意图
@@ -422,6 +423,20 @@ GET .../live_xxx-1793013747.ts   无 Referer → 200
 
 底部 sheet 在 iOS 27 默认是**玻璃底**，不处理会透出下面的详情页，浅色下分区和 chip 糊成一片。要么显式 `.presentationBackground(Theme.canvas)`，要么把 sheet 内容铺满——这里选前者。
 
+### 左滑返回
+
+详情页等自定义顶栏的页面都用了 `navigationBarBackButtonHidden(true)` + 隐藏导航栏，SwiftUI 在导航栏隐藏时会顺带禁用 `interactivePopGestureRecognizer`，左滑返回就死了。`PopGestureFix` 在每个 `NavigationStack` 根部挂一个透明 `UIViewControllerRepresentable`，把手势 delegate 换成自己的实现并重新启用；delegate 的 `gestureRecognizerShouldBegin` 只在栈深 > 1 时放行，避免在根视图上响应边缘滑动把导航栈滑出怪状态。patch 是幂等的，push/pop 之后任何一次布局更新都会重新补一遍。
+
+### 画中画小窗
+
+自绘播放器没走 `AVPlayerViewController`，小窗要自己搭：`AVPictureInPictureController` + `ContentSource(playerLayer:)` 挂在当前显示的 `AVPlayerLayer` 上。内嵌播放器和全屏播放器共用同一个 `AVPlayer` 但各有一个 layer，`PlayerLayerView` 每次创建/更新都重新 `attach`，保证小窗内容源始终指向正在显示的那块 layer。
+
+「退后台自动进小窗」靠 `canStartPictureInPictureAutomaticallyFromInline = true`：App 失活时系统自动起小窗、回前台自动还原，不用监听通知。前提是三件套齐了——`UIBackgroundModes` 里加 `audio` + `picture-in-picture`、`AVAudioSession` 类别 `.playback`（引擎起播时已设）、小窗控制器在起播前挂好。
+
+iOS 27 SDK 的两个坑：`ContentSource(playerLayer:playbackDelegate:)` 和 `AVPictureInPictureSamplePlaybackDelegate` 被移除了（playerLayer 来源的协议方法本来就全是可选，直接删掉即可）；`canStartPictureInPictureAutomaticallyOnDeactivation` 改名为 `...FromInline`；`stopPictureInPicture(withCompletion:)` 变成无参的 `stopPictureInPicture()`。
+
+小窗激活时本地画面是黑的，播放区会盖一层「小窗播放中」占位——内容源 layer 必须保持存活，只能挡视觉不能移除。模拟器 `isPictureInPictureSupported()` 恒为 false，此功能仅真机可用。
+
 ## 已知限制
 
 | 限制 | 说明 |
@@ -437,6 +452,7 @@ GET .../live_xxx-1793013747.ts   无 Referer → 200
 | 直播匿名弹幕稀疏 | 未登录时服务端推送明显少于网页端已登录状态，热门房间也可能长时间只有零星几条。登录后会更密。 |
 | 直播互动 | 只做拉流播放 + 弹幕，未接入礼物、醒目留言、清晰度切换、发弹幕。 |
 | 直播弹幕开关 | 显隐开关不落盘，每次进直播间默认为开。 |
+| 画中画 | 模拟器不支持（`isPictureInPictureSupported()` 为 false），仅真机可用；退出播放页会连带收起小窗，「回首页仍挂小窗」未做（需要把播放引擎提升到页面外持有）。 |
 | 动态详情 | 时间线支持图文与转发正文，但「展开全文」「转发原动态」未实现。 |
 | 投币 | 只投 1 枚；「同时点赞」开关与 2 枚连投未做。 |
 | 收藏夹选择 | 收藏固定落到默认收藏夹（列表第一个），未做收藏夹选择器。 |

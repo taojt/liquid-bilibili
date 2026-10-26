@@ -16,6 +16,8 @@ struct PlayerLayerView: UIViewRepresentable {
         view.backgroundColor = .black
         view.playerLayer.player = player
         view.playerLayer.videoGravity = .resizeAspect
+        // 画中画挂在当前显示的 layer 上（内嵌 / 全屏切换后这里会重新走到）
+        PiPManager.shared.attach(playerLayer: view.playerLayer)
         return view
     }
 
@@ -25,6 +27,7 @@ struct PlayerLayerView: UIViewRepresentable {
         if uiView.playerLayer.player !== player {
             uiView.playerLayer.player = player
         }
+        PiPManager.shared.attach(playerLayer: uiView.playerLayer)
     }
 
     /// 注意：这里刻意不在 dismantle 里把 player 置 nil。

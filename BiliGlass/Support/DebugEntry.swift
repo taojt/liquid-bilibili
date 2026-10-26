@@ -98,6 +98,11 @@ enum DebugEntry {
         UserDefaults.standard.bool(forKey: "debugScroll")
     }
 
+    /// 详情页起播后自动进画中画小窗（模拟器没法按 Home 键）
+    static var pip: Bool {
+        UserDefaults.standard.bool(forKey: "debugPip")
+    }
+
     /// 首页启动后直接推进搜索页
     static var search: Bool {
         UserDefaults.standard.bool(forKey: "debugSearch")
@@ -141,7 +146,7 @@ enum DebugEntry {
             "debugMySpace", "debugMySpaceTab", "debugDanmakuSettings",
             "debugDanmakuArea", "debugDanmakuOpacity", "debugDanmakuInfo",
             "debugComment", "debugTripleBurst", "debugKeyword", "debugRate",
-            "debugCommentComposer", "debugCollapsed", "debugScroll"
+            "debugCommentComposer", "debugCollapsed", "debugScroll", "debugPip"
         ] {
             defaults.removeObject(forKey: key)
         }

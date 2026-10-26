@@ -82,6 +82,8 @@ struct RootView: View {
             NavigationStack(path: path) {
                 content()
             }
+            // 救回「左滑返回」手势：页面普遍隐藏了系统导航栏
+            .background(PopGestureFix())
             .opacity(active ? 1 : 0)
             .allowsHitTesting(active)
             .accessibilityHidden(!active)
