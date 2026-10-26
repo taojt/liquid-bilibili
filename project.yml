@@ -1,0 +1,62 @@
+name: BiliGlass
+
+options:
+  bundleIdPrefix: com.biliglass
+  # 用 iOS 27 SDK 编译（Liquid Glass v2 材质由 SDK 决定），
+  # 部署目标设 26.2 以便在本机现有模拟器运行时上验证。
+  deploymentTarget:
+    iOS: "26.2"
+  createIntermediateGroups: true
+  groupSortPosition: top
+
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    SWIFT_STRICT_CONCURRENCY: minimal
+    ENABLE_USER_SCRIPT_SANDBOXING: NO
+    # Xcode 27 起 @State 等属性改为宏实现，宏插件服务默认用 sandbox-exec 包裹子进程。
+    # 在受限终端环境下 sandbox_apply 会失败导致 "produced malformed response"，
+    # 关闭该沙箱即可正常编译。Xcode GUI 内构建时此开关无害。
+    OTHER_SWIFT_FLAGS: "$(inherited) -disable-sandbox"
+    # 真机安装需要签名。个人免费团队（Tao Jiang Personal Team）的 profile 有效期 7 天。
+    # 模拟器构建时用命令行覆盖 CODE_SIGNING_ALLOWED=NO 即可跳过签名。
+    DEVELOPMENT_TEAM: 4486C55NWW
+    CODE_SIGN_STYLE: Automatic
+
+targets:
+  BiliGlass:
+    type: application
+    platform: iOS
+    sources:
+      - path: BiliGlass
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.biliglass.app
+        PRODUCT_NAME: BiliGlass
+        TARGETED_DEVICE_FAMILY: "1"
+        MARKETING_VERSION: "1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        # 应用图标（三套变体：默认 / 深色 / 着色），由 scripts/generate-icon.swift 生成
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        # 状态栏样式交给系统按明暗主题自动决定。
+        # 之前写死 LightContent 是为了纯深色界面，现在支持白天模式，
+        # 浅色背景上白字会看不见。
+    info:
+      path: BiliGlass/Info.plist
+      properties:
+        CFBundleDisplayName: bilibili
+        CFBundleShortVersionString: "1.0"
+        UILaunchScreen:
+          UIColorName: ""
+        UIRequiresFullScreen: true
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        NSPhotoLibraryAddUsageDescription: 用于保存图片
+        NSAppTransportSecurity:
+          NSAllowsArbitraryLoads: true
+          NSAllowsArbitraryLoadsInWebContent: true
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
