@@ -36,7 +36,7 @@ struct FloatingTabBar: View {
             .padding(4)
             .glassEffect(.regular, in: .rect(cornerRadius: 26, style: .continuous))
         }
-        .padding(.horizontal, 34)
+        .padding(.horizontal, 16)
         .padding(.bottom, 2)
     }
 
