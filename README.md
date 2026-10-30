@@ -64,9 +64,15 @@
 | --- | --- |
 | <img src="docs/screen-press-dark.png" width="230"/> | <img src="docs/screen-press-light.png" width="230"/> |
 
-**iPad**（iPad Pro 11"，封面 4 列、底栏与正文限宽居中）
+**iPad**（封面 4 列、底栏与正文限宽居中）
 
-| iPad 首页 | iPad 详情页 |
+| 首页（iPadOS 17 真机） | 详情页（iPadOS 17 真机） |
+| --- | --- |
+| <img src="docs/ipad-home-ios17.png" width="330"/> | <img src="docs/ipad-detail-ios17.png" width="330"/> |
+
+上两张跑在 **iPad Pro 11" 2018 / iPadOS 17.6.1** 真机上——也就是**降级玻璃**的样子：没有实时折射，靠材质 + 顶光渐变，观感上仍是玻璃。下方两张是同款 App 在 iPad Pro 11" M5 模拟器（iOS 26）上走系统 `glassEffect` 的效果，可对比两种材质的差别。
+
+| 首页（iPadOS 26） | 详情页（iPadOS 26） |
 | --- | --- |
 | <img src="docs/ipad-home.png" width="330"/> | <img src="docs/ipad-detail.png" width="330"/> |
 
