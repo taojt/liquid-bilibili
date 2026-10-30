@@ -27,6 +27,17 @@ struct FloatingTabBar: View {
     ]
 
     @Namespace private var tabNamespace
+    @Environment(\.colorScheme) private var scheme
+
+    /// 栏体玻璃的 tint。
+    ///
+    /// iOS 26 的 Liquid Glass 是「透光 + 边缘折射」，**不负责把背后的内容糊掉**：
+    /// 背后是高对比封面时，缩略图上的字会清晰地透上来和标签打架。
+    /// 所以下面额外垫了一层 `.ultraThinMaterial` 负责真正的背景模糊，
+    /// 玻璃负责透光和边缘——两者叠起来才是系统 Dock 那种磨砂玻璃。
+    private var barTint: Color {
+        scheme == .dark ? .black.opacity(0.22) : .white.opacity(0.28)
+    }
 
     private var barShape: RoundedRectangle {
         RoundedRectangle(cornerRadius: 30, style: .continuous)
@@ -46,11 +57,14 @@ struct FloatingTabBar: View {
             .padding(.horizontal, 6)
             .padding(.vertical, 5)
             .frame(height: 62)
-            .glassEffect(.regular, in: barShape)
+            .background {
+                barShape.fill(.ultraThinMaterial)
+            }
+            .glassEffect(.regular.tint(barTint), in: barShape)
         }
         .liquidEdge(barShape, lineWidth: 1.1, elevated: true)
         .padding(.horizontal, 12)
-        .padding(.bottom, 2)
+        .padding(.bottom, 6)
     }
 
     private func button(index: Int) -> some View {
@@ -66,7 +80,7 @@ struct FloatingTabBar: View {
                 Image(systemName: active ? item.activeIcon : item.icon)
                     .font(.system(size: 16, weight: .semibold))
                     // 选中项的图标压在粉玻璃砖上，必须用白色，否则同色系糊成一团
-                    .foregroundStyle(active ? .white : Theme.inkDim.opacity(0.85))
+                    .foregroundStyle(active ? .white : Theme.inkDim)
                     .frame(width: 34, height: 27)
                     .background {
                         if active {
@@ -76,7 +90,9 @@ struct FloatingTabBar: View {
 
                 Text(item.title)
                     .font(.system(size: 9.5, weight: active ? .semibold : .medium))
-                    .foregroundStyle(active ? Theme.pink : Theme.inkDim.opacity(0.85))
+                    // InkDim 自带 0.62 透明度，别再叠一层，否则浅色主题下
+                    // 未选中项淡到几乎看不见
+                    .foregroundStyle(active ? Theme.pink : Theme.inkDim)
             }
             .frame(maxWidth: .infinity)
             .contentShape(.rect)
@@ -84,13 +100,15 @@ struct FloatingTabBar: View {
         .buttonStyle(.plain)
     }
 
-    /// 选中项底下的小玻璃砖。粉 tint 只压到 0.32——
-    /// 再高会把背后的瀑布流颜色完全盖掉，玻璃就变成色块了
+    /// 选中项底下的小玻璃砖。
+    ///
+    /// 只留玻璃、不再垫一层粉色实底：垫了实底之后玻璃被完全挡住，
+    /// 砖就退化成一个粉色圆角方块，玩具感很重。纯玻璃 + 0.35 的粉 tint
+    /// 才是"一块被染上品牌色的玻璃"——能透出背后的瀑布流，边缘还带受光。
     private var tile: some View {
         tileShape
-            .fill(Theme.pink.opacity(0.16))
             .glassEffect(
-                .regular.tint(Theme.pink.opacity(0.32)).interactive(),
+                .regular.tint(Theme.pink.opacity(0.35)).interactive(),
                 in: tileShape
             )
             .liquidEdge(tileShape, lineWidth: 0.8)

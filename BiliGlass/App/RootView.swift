@@ -32,20 +32,26 @@ struct RootView: View {
             tab(index: 2, path: $historyPath) { HistoryView() }
             tab(index: 3, path: $profilePath) { ProfileView() }
 
-            // 底部渐隐：内容滚到悬浮栏下方时自然淡进底色，
-            // 而不是被一条实色边"切"断——这是 Apple TV 那种
-            // "内容继续延伸、只是被玻璃压暗"的关键
+            // 底部渐隐：内容滚到悬浮栏下方时淡进底色。
+            //
+            // 刻意**不压满**——末端只到 0.82。压成不透明的话玻璃背后就是一片纯色，
+            // 折射无从发生，底栏会退化成一块白板；留一点内容透出来，卡片从
+            // 玻璃下划过时才能看见材质在变亮变暗。
             if !tabBarCovered {
                 LinearGradient(
                     stops: [
                         .init(color: Theme.canvasBottom.opacity(0), location: 0),
-                        .init(color: Theme.canvasBottom.opacity(0.72), location: 0.55),
-                        .init(color: Theme.canvasBottom.opacity(0.97), location: 1)
+                        .init(color: Theme.canvasBottom.opacity(0.42), location: 0.45),
+                        .init(color: Theme.canvasBottom.opacity(0.82), location: 1)
                     ],
                     startPoint: .top,
                     endPoint: .bottom
                 )
-                .frame(height: 128)
+                .frame(height: 118)
+                // 必须一路铺到物理屏幕底边：只铺安全区的话，home indicator
+                // 那一条（约 34pt）会漏出来，卡片清清楚楚地露在栏下面，
+                // 视觉上像是栏没落到底
+                .ignoresSafeArea(edges: .bottom)
                 .allowsHitTesting(false)
                 .zIndex(9)
             }
