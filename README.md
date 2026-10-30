@@ -76,6 +76,12 @@
 | --- | --- |
 | <img src="docs/ipad-home.png" width="330"/> | <img src="docs/ipad-detail.png" width="330"/> |
 
+横屏（iPad 横着是常态，列数随宽度自动增长）：
+
+| 横屏首页（6 列） | 横屏「我的」 |
+| --- | --- |
+| <img src="docs/ipad-landscape.png" width="420"/> | <img src="docs/ipad-landscape-profile.png" width="420"/> |
+
 ## 运行
 
 ```bash
@@ -264,6 +270,12 @@ xcodebuild -project BiliGlass.xcodeproj -scheme BiliGlass \
 | `.buttonStyle(.glass)` / `.glassProminent` | 系统玻璃按钮 | 自绘胶囊，**两版本统一**（系统样式各版会微调，自绘更稳） |
 | `onScrollGeometryChange` (iOS 18) | 滚动偏移回调 | KVO 观察底层 `UIScrollView.contentOffset` |
 | `scrollEdgeEffectStyle` | 顶部硬边缘 | 系统默认行为 |
+
+**iPad 横屏**：光改布局是不够的——`OrientationLock` 的默认 mask 只有 `.portrait`，iPad 横着拿时系统压根不让 App 转，竖屏布局被居中成中间一条、两侧露桌面，看着就像"没适配"。iPad 上默认放开到 `.all`，并且 `lockPortrait` / `forcePortrait` 只恢复 mask、不主动 `requestGeometryUpdate`：用户可能正横着看列表，强行转回竖屏会把整页甩一下。
+
+**列数不要按设备类型写死**：一开始用 `horizontalSizeClass` 分「iPhone 2 列 / iPad 4 列」，结果 iPad 一横屏每列 290pt，封面大得离谱。换成 `GridItem(.adaptive(minimum: 160))` 后由系统按可用宽度算，横竖屏旋转即自适应，实测 iPhone 2 列 / iPad 竖屏 4 列 / 横屏 6 列。
+
+**底栏闸门的 Tab 归属**：`rootTabIndex` 原来挂在根 ZStack 上、值是"当前选中的 Tab"。被 push 的页面靠它登记"我盖住的是哪个 Tab"，一旦页面因为旋转重建，就会用**那时**选中的 Tab 重新登记——于是切到哪个 Tab，哪个 Tab 的底栏就被这条错位记录钉死消失。改成每个 Tab 容器里固定播报自己的 index。
 
 **iPad 布局**：设备族开到 `1,2` 后有两处按手机调死的尺寸会明显不对，都在 `Design/DeviceLayout.swift` 里按 `horizontalSizeClass` 分档——封面网格 iPhone 2 列 / iPad 4 列（否则一张封面近 600pt），悬浮底栏最大宽 460pt（否则 4 个标签平摊到 1200pt）。正文另加 760pt 上限并居中，播放器保持全宽。
 
