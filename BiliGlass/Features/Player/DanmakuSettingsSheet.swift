@@ -28,7 +28,7 @@ struct DanmakuSettingsSheet: View {
                 .padding(.bottom, 24)
             }
             .scrollIndicators(.hidden)
-            .background(Theme.canvas.ignoresSafeArea())
+            .background(CanvasBackdrop())
             .navigationTitle("弹幕设置")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

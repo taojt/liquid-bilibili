@@ -27,7 +27,7 @@ struct SearchView: View {
 
     var body: some View {
         ZStack {
-            Theme.canvas.ignoresSafeArea()
+            CanvasBackdrop()
 
             VStack(spacing: 0) {
                 searchBar

@@ -40,7 +40,7 @@ struct CommentComposer: View {
             .padding(.horizontal, 16)
             .padding(.top, 10)
             .padding(.bottom, 16)
-            .background(Theme.canvas.ignoresSafeArea())
+            .background(CanvasBackdrop())
             .navigationTitle(title)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

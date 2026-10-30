@@ -2,28 +2,37 @@ import SwiftUI
 
 /// 双列网格里的视频卡片。
 ///
-/// 封面上的角标（时长、播放量）用玻璃胶囊压在图片上，卡片整体也带一层玻璃底，
-/// 这样既能折射出封面内容，又保证深色背景下的文字可读性。
+/// 造型向 Apple TV 靠：**封面就是卡片本体**，不再给整张卡片套一层玻璃底——
+/// 一格一格全是玻璃的话，页面会变成一片磨砂，反而不见"玻璃"。
+/// 把玻璃让给悬浮栏、角标、按钮这些真正该浮起来的层，封面上只留
+/// 一道极细的受光边和柔投影，剩下的对比度全交给封面本身。
+///
 /// 卡片本身不带交互，点击行为由外层的 NavigationLink 决定。
 struct VideoGridCard: View {
     let model: VideoCellModel
 
+    private var coverShape: RoundedRectangle {
+        RoundedRectangle(cornerRadius: Theme.coverRadius, style: .continuous)
+    }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 7) {
+        VStack(alignment: .leading, spacing: 8) {
             coverView
 
-            Text(model.title)
-                .font(.system(size: 13, weight: .medium))
-                .foregroundStyle(Theme.ink)
-                .lineLimit(2)
-                .multilineTextAlignment(.leading)
-                .frame(maxWidth: .infinity, alignment: .leading)
+            VStack(alignment: .leading, spacing: 5) {
+                Text(model.title)
+                    .font(.system(size: 13.5, weight: .semibold))
+                    .foregroundStyle(Theme.ink)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.leading)
+                    .lineSpacing(1)
+                    .frame(maxWidth: .infinity, alignment: .leading)
 
-            footer
+                footer
+            }
+            .padding(.horizontal, 2)
         }
-        .padding(8)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .glassEffect(.regular, in: .rect(cornerRadius: 18))
     }
 
     // MARK: - 封面
@@ -43,14 +52,26 @@ struct VideoGridCard: View {
                     }
                 }
             }
-            .clipShape(.rect(cornerRadius: 13))
+            .overlay(alignment: .bottom) {
+                // 底部压暗，让角标在任何封面上都读得清
+                LinearGradient(
+                    colors: [.clear, .black.opacity(0.55)],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .frame(height: 44)
+                .allowsHitTesting(false)
+            }
+            .clipShape(coverShape)
+            .liquidEdge(coverShape, lineWidth: 0.9)
+            .shadow(color: .black.opacity(0.32), radius: 9, y: 5)
             .overlay(alignment: .bottomLeading) { statsBadge }
             .overlay(alignment: .bottomTrailing) { durationBadge }
             .overlay(alignment: .bottom) { progressBar }
     }
 
     private var statsBadge: some View {
-        HStack(spacing: 4) {
+        HStack(spacing: 6) {
             if let view = model.viewCount {
                 Label(view.biliCount, systemImage: "play.fill")
                     .labelStyle(.titleAndIcon)
@@ -59,22 +80,18 @@ struct VideoGridCard: View {
                 Label(danmaku.biliCount, systemImage: "text.bubble.fill")
             }
         }
-        .font(.system(size: 9, weight: .medium))
-        .foregroundStyle(Theme.ink)
-        .padding(.horizontal, 6)
-        .padding(.vertical, 3)
+        .font(.system(size: 9, weight: .semibold))
+        .foregroundStyle(.white)
+        .padding(.horizontal, 7)
+        .padding(.vertical, 3.5)
         .glassEffect(.regular, in: .capsule)
-        .padding(5)
+        .liquidEdge(Capsule(style: .continuous), lineWidth: 0.7)
+        .padding(7)
     }
 
     private var durationBadge: some View {
-        Text(model.progressText ?? model.duration.durationText)
-            .font(.system(size: 9, weight: .medium))
-            .foregroundStyle(Theme.ink)
-            .padding(.horizontal, 6)
-            .padding(.vertical, 3)
-            .glassEffect(.regular, in: .capsule)
-            .padding(5)
+        GlassTag(text: model.progressText ?? model.duration.durationText)
+            .padding(7)
     }
 
     /// 历史记录的续播进度
@@ -83,14 +100,22 @@ struct VideoGridCard: View {
         if let ratio = model.progressRatio {
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
-                    Capsule().fill(.white.opacity(0.25))
-                    Capsule().fill(Theme.pink)
+                    Capsule().fill(.white.opacity(0.28))
+                    Capsule()
+                        .fill(
+                            LinearGradient(
+                                colors: [Theme.pink, Theme.purple],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
                         .frame(width: geo.size.width * ratio)
+                        .shadow(color: Theme.pink.opacity(0.6), radius: 4)
                 }
             }
-            .frame(height: 2.5)
-            .padding(.horizontal, 4)
-            .padding(.bottom, 3)
+            .frame(height: 3)
+            .padding(.horizontal, 6)
+            .padding(.bottom, 4)
         }
     }
 
@@ -106,17 +131,20 @@ struct VideoGridCard: View {
                 }
                 .frame(width: 15, height: 15)
                 .clipShape(.circle)
+                .overlay {
+                    Circle().strokeBorder(.white.opacity(0.16), lineWidth: 0.5)
+                }
             } else {
                 Image(systemName: "person.fill")
                     .font(.system(size: 7))
-                    .foregroundStyle(Theme.inkFaint)
+                    .foregroundStyle(Theme.inkFaint.opacity(0.55))
                     .frame(width: 15, height: 15)
                     .background(Theme.ink.opacity(0.1), in: .circle)
             }
 
             Text(model.upName ?? "未知UP主")
-                .font(.system(size: 10))
-                .foregroundStyle(Theme.inkDim)
+                .font(.system(size: 10.5))
+                .foregroundStyle(Theme.inkDim.opacity(0.62))
                 .lineLimit(1)
 
             Spacer(minLength: 0)

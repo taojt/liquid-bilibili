@@ -14,7 +14,7 @@ struct FavoritesView: View {
 
     var body: some View {
         ZStack {
-            Theme.canvas.ignoresSafeArea()
+            CanvasBackdrop()
 
             ScrollView {
                 VStack(spacing: 12) {
@@ -172,7 +172,7 @@ struct FavFolderContentView: View {
 
     var body: some View {
         ZStack {
-            Theme.canvas.ignoresSafeArea()
+            CanvasBackdrop()
             VideoFeedGrid(store: store, emptyHint: "这个收藏夹是空的", bottomInset: 40)
         }
         .navigationTitle(title)

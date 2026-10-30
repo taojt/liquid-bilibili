@@ -49,7 +49,7 @@ struct VideoDetailView: View {
 
     var body: some View {
         ZStack {
-            Theme.canvas.ignoresSafeArea()
+            CanvasBackdrop()
 
             if isFullscreen {
                 fullscreenLayer

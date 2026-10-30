@@ -18,7 +18,7 @@
 | 直播 | 直播间列表、拉流播放、实时弹幕、手动 / 转屏全屏 |
 | 账号 | 扫码登录，Cookie 会话持久化，冷启动自动恢复登录态 |
 | 手势 | 所有被推入的页面支持**左滑返回**（导航栏隐藏后系统手势被禁用，已修复） |
-| 外观 | 液态玻璃（iOS 26+ `glassEffect`）；跟随系统 / 白天 / 夜间三种模式，明暗双套 App 图标 |
+| 外观 | 近黑画布 + 品牌色极光底、封面即卡片的大圆角视觉（参考 Apple TV）；液态玻璃（iOS 26+ `glassEffect` + 自绘光学边缘）；跟随系统 / 白天 / 夜间三种模式，明暗双套 App 图标 |
 
 ## 示意图
 
@@ -162,15 +162,27 @@ xcrun swift scripts/generate-icon.swift BiliGlass/Resources/Assets.xcassets/AppI
 
 ### 液态玻璃
 
-玻璃只用在「浮动层」——导航栏、播放控制条、卡片上的信息面板与按钮。视频卡片、列表这类内容载体保持实心，因为多层玻璃叠加会同时损失性能与文字可读性，且在「降低透明度」辅助功能开启时会失效。
+玻璃只用在「浮动层」——导航栏、播放控制条、悬浮底栏、角标与按钮。视频卡片、列表这类内容载体保持实心：一格一格全铺玻璃的话整页会变成一片磨砂，反而**看不见**玻璃了。把玻璃让给少数几处该浮起来的面，对比度才立得住。
 
 面积也要控制：一个整屏高的玻璃面板（例如最初的热搜榜）会形成一圈很突兀的镜面高光，长列表应该退回「半透明实心 + 细描边」。
+
+**`glassEffect` 只做背景采样，不做边缘。** 系统材质本身在深色底上和背景几乎同亮度，糊成一团；浅色底上又像一坨白色磨砂。iOS 27 系统控件之所以有「液态」感，靠的是边缘那道受光高光 + 底边暗边 + 一层把玻璃托离内容的投影。`LiquidEdge` 就是补这三样：按明暗两套给不同方向的描边梯度（深色左上白 0.52 → 右下白 0.16；浅色纯白 → 右下墨 0.07），需要悬浮的面再加 `elevated` 外投影。所有自定义玻璃统一走 `GlassPanel` / `GlassTag` / `liquidEdge()`，保证全 App 的受光方向一致。
+
+**`glassEffect` 不能放进 `.background {}`。** 它是独立合成的材质层，挂成背景时会渲染到前景内容之上——二级 Tab 的轨道底这么写之后，选中项和未选中项的文字一起被糊成一团灰影，看起来像「文字消失」。正确写法是直接挂在容器身上：`HStack { ... }.glassEffect(.regular, in: .capsule)`，材质会落在容器内容的下方。
 
 用到的 iOS 26/27 API：`.glassEffect(_:in:)`、`GlassEffectContainer` + `glassEffectID`、`.buttonStyle(.glass)` / `.glassProminent`、`tabBarMinimizeBehavior(.onScrollDown)`、`scrollEdgeEffectStyle`、`backgroundExtensionEffect`、`navigationTransition(.zoom)` + `matchedTransitionSource`。
 
 **形状必须写进 `glassEffect(_:in:)` 的 `in:` 参数。** 只在外面套一层 `.clipShape(.rect(cornerRadius: 16))` 是无效的：玻璃材质本身仍按系统默认圆角生成（圆角半径接近高度的一半，看起来像胶囊），`clipShape` 只是把外层内容裁掉，于是「设置卡片两头变成椭圆」——玻璃形状和内容形状不是同一个东西。正确写法是 `glassEffect(.regular.tint(t).interactive(), in: RoundedRectangle(cornerRadius: corner, style: .continuous))`，`GlassPanel` 里由 `corner` 统一驱动。
 
 同理，圆形按钮要写 `in: .circle` 而不是先铺满再 clip。
+
+### 视觉基调
+
+整页背景是「近黑画布 + 两团品牌色极光」（`CanvasBackdrop`）。纯色/纯渐变底会让玻璃无从折射——玻璃的质感来自它背后**有东西**；叠上大范围低透明度的粉、紫、蓝色斑之后，悬浮栏和卡片掠过去时能真的看到材质在变亮变暗。浅色主题下同样的色斑会读成一层柔和的粉紫雾，所以透明度按 `colorScheme` 分别取 0.55 / 0.22，否则顶部搜索框和 Tab 会糊在一起。
+
+卡片造型向 Apple TV 靠：**封面就是卡片本体**，圆角 20、一道极细受光边、往下 9pt 的柔投影，底部压一层黑色渐变让角标可读；标题和 UP 主信息直接落在画布上，不再给整张卡片套玻璃底。悬浮底栏同理——近乎满宽的玻璃条，图标在上文字在下，选中项的图标落在一块独立小玻璃砖上，`glassEffectID` 让它在两点之间流动，途中会和底下的玻璃条短暂融合。
+
+底栏下方还有一道 128pt 的渐隐（`canvasBottom` 0 → 0.97），内容滚到栏下时自然淡进底色，而不是被一条实色边切断。
 
 ### 登录
 

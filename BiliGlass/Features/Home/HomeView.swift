@@ -68,7 +68,7 @@ struct HomeView: View {
             .scrollPosition(id: $pageID)
             .scrollIndicators(.hidden)
         }
-        .background(Theme.canvas.ignoresSafeArea())
+        .background(CanvasBackdrop())
         .toolbar(.hidden, for: .navigationBar)
         .onChange(of: pageID) { _, new in
             // 手势翻页 → 反向更新 Tab 选中态
@@ -124,9 +124,7 @@ struct HomeView: View {
         VStack(spacing: 8) {
             if !collapsed {
                 HStack(spacing: 10) {
-                    Image(systemName: "play.tv.fill")
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundStyle(Theme.pink)
+                    logoMark
 
                     NavigationLink {
                         SearchView()
@@ -162,6 +160,29 @@ struct HomeView: View {
         .padding(.bottom, 6)
     }
 
+    /// 品牌标记：粉色小玻璃砖。玻璃砖比裸图标更有"实体感"，
+    /// 也让顶栏在视觉上和右侧的搜索胶囊、头像处在同一套材质语言里
+    private var logoMark: some View {
+        let shape = RoundedRectangle(cornerRadius: 10, style: .continuous)
+        return Image(systemName: "play.tv.fill")
+            .font(.system(size: 15, weight: .semibold))
+            .foregroundStyle(.white)
+            .frame(width: 32, height: 32)
+            .background {
+                shape
+                    .fill(
+                        LinearGradient(
+                            colors: [Theme.pink, Theme.purple],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .glassEffect(.regular.tint(Theme.pink.opacity(0.55)), in: shape)
+            }
+            .liquidEdge(shape, lineWidth: 0.9)
+            .shadow(color: Theme.pink.opacity(0.35), radius: 8, y: 3)
+    }
+
     /// 上滑收起后的小搜索图标，独立对齐在「直播」右侧
     private var compactSearchButton: some View {
         NavigationLink {
@@ -170,8 +191,9 @@ struct HomeView: View {
             Image(systemName: "magnifyingglass")
                 .font(.system(size: 13, weight: .semibold))
                 .foregroundStyle(Theme.ink)
-                .frame(width: 30, height: 30)
+                .frame(width: 32, height: 32)
                 .glassEffect(.regular.interactive(), in: .circle)
+                .liquidEdge(Circle(), lineWidth: 0.8)
         }
         .buttonStyle(.plain)
         .transition(.scale(scale: 0.6).combined(with: .opacity))
@@ -192,19 +214,20 @@ struct HomeView: View {
     }
 
     private var searchEntry: some View {
-        HStack(spacing: 7) {
+        HStack(spacing: 8) {
             Image(systemName: "magnifyingglass")
                 .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(Theme.inkFaint)
+                .foregroundStyle(Theme.inkDim.opacity(0.65))
             Text("搜索视频、UP 主")
-                .font(.system(size: 12))
-                .foregroundStyle(Theme.inkFaint)
+                .font(.system(size: 12.5))
+                .foregroundStyle(Theme.inkFaint.opacity(0.62))
                 .lineLimit(1)
             Spacer(minLength: 0)
         }
-        .padding(.horizontal, 12)
-        .frame(height: 34)
+        .padding(.horizontal, 13)
+        .frame(height: 36)
         .glassEffect(.regular.interactive(), in: .capsule)
+        .liquidEdge(Capsule(style: .continuous), lineWidth: 0.9)
     }
 
     private var avatarButton: some View {
@@ -250,7 +273,8 @@ struct HomeView: View {
         Image(systemName: "person.crop.circle")
             .font(.system(size: 14, weight: .semibold))
             .foregroundStyle(Theme.ink)
-            .frame(width: 30, height: 30)
+            .frame(width: 32, height: 32)
             .glassEffect(.regular.tint(Theme.pink).interactive(), in: .circle)
+            .liquidEdge(Circle(), lineWidth: 0.8)
     }
 }

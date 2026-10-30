@@ -27,9 +27,11 @@ struct SegmentTabs: View {
                     }
                 }
                 .padding(3)
-                .background {
-                    track
-                }
+                // 玻璃必须直接作用在容器上，**不能**放进 `.background {}`：
+                // glassEffect 是独立合成的材质层，挂成背景时会盖在前景文字上，
+                // 选择项和未选择项的文字会一起被糊成一层灰影。
+                .glassEffect(.regular, in: .capsule)
+                .liquidEdge(Capsule(style: .continuous), lineWidth: 0.9)
                 // 必须钉住固有宽度：横向 ScrollView 会把容器宽度提给内容，
                 // HStack 里若干 Text 吸收掉多余空间后，轨道底会被撑到屏幕右侧，
                 // 出现「直播」后面拖一截空胶囊的问题。
@@ -38,34 +40,6 @@ struct SegmentTabs: View {
         }
         .scrollIndicators(.hidden)
         .scrollBounceBehavior(.basedOnSize, axes: .horizontal)
-    }
-
-    /// 轨道底：浅色下需要一点「凹槽感」把未选中项托住，
-    /// 否则一排纯文字浮在浅色画布上会显得散。
-    ///
-    /// 浅色下只靠一层灰fill会显得像「脏色块」，所以叠两道描边：
-    /// 内侧一道白色渐变高光（玻璃受光的边缘），外侧一道极细墨色勾边（界定轮廓）。
-    /// 深色下反过来，高光弱一些，避免轨道发白发亮。
-    private var track: some View {
-        Capsule(style: .continuous)
-            .fill(Theme.ink.opacity(colorScheme == .dark ? 0.10 : 0.06))
-            .overlay {
-                Capsule(style: .continuous)
-                    .strokeBorder(
-                        LinearGradient(
-                            colors: colorScheme == .dark
-                                ? [.white.opacity(0.10), .white.opacity(0.015)]
-                                : [.white.opacity(0.85), .white.opacity(0.30)],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        ),
-                        lineWidth: 0.8
-                    )
-            }
-            .overlay {
-                Capsule(style: .continuous)
-                    .strokeBorder(Theme.ink.opacity(0.06), lineWidth: 0.5)
-            }
     }
 
     @ViewBuilder
@@ -85,11 +59,16 @@ struct SegmentTabs: View {
         .buttonStyle(.plain)
     }
 
+    /// 选中态：高饱和粉紫渐变实底 + 白字。
+    ///
+    /// 这里刻意**不**再叠一层 glassEffect：玻璃 tint 在浅色主题下会被背景稀释成
+    /// 「脏粉」，白字直接糊掉；实色渐变能保证两套主题下对比度稳定。
+    /// "玻璃感"交给轨道层和那一圈受光描边来提供。
     private func activeLabel(_ title: String) -> some View {
         Text(title)
             .font(.system(size: 14, weight: .semibold))
             .foregroundStyle(.white)
-            .shadow(color: Theme.pink.opacity(0.45), radius: 4, y: 1)
+            .shadow(color: .black.opacity(0.18), radius: 3, y: 1)
             .padding(.horizontal, 16)
             .padding(.vertical, 7)
             .background {
@@ -102,18 +81,22 @@ struct SegmentTabs: View {
                         )
                     )
                     .overlay {
-                        // 顶部一道细高光，模拟玻璃边缘的反光
+                        // 顶部一道细高光 + 底部一道反光，模拟玻璃棒受光
                         Capsule(style: .continuous)
                             .strokeBorder(
                                 LinearGradient(
-                                    colors: [.white.opacity(0.55), .white.opacity(0.05)],
+                                    colors: [
+                                        .white.opacity(0.55),
+                                        .white.opacity(0.06),
+                                        .white.opacity(0.22)
+                                    ],
                                     startPoint: .top,
                                     endPoint: .bottom
                                 ),
-                                lineWidth: 0.8
+                                lineWidth: 0.9
                             )
                     }
-                    .shadow(color: Theme.pink.opacity(0.35), radius: 6, y: 2)
+                    .shadow(color: Theme.pink.opacity(0.30), radius: 8, y: 3)
             }
             .glassEffectID("segment-active", in: segmentNamespace)
     }

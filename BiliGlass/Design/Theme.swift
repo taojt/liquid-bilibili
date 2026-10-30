@@ -29,6 +29,7 @@ enum Theme {
     /// 卡片圆角，与控件圆角保持同族曲线
     static let cardRadius: CGFloat = 26
     static let innerRadius: CGFloat = 16
+    static let coverRadius: CGFloat = 20
     static let contentPadding: CGFloat = 16
 
     /// 页面底色：浅色是带粉紫调的近白，深色是近黑紫蓝。
@@ -45,6 +46,10 @@ enum Theme {
         )
     }
 
+    /// 画布两端的纯色，用于做渐变遮罩（顶部压暗 / 底部渐隐）
+    static let canvasTop = Color("CanvasTop")
+    static let canvasBottom = Color("CanvasBottom")
+
     /// 卡片封面背后的柔和光斑，让玻璃折射有层次
     static func glow(for seed: String) -> RadialGradient {
         let palette: [Color] = [pink, blue, purple]
@@ -55,6 +60,51 @@ enum Theme {
             startRadius: 4,
             endRadius: 260
         )
+    }
+}
+
+/// 整页背景：画布渐变 + 两团品牌色极光。
+///
+/// 纯渐变底会让玻璃「无从折射」——玻璃的质感来自它背后有东西。
+/// 叠两团大范围的低透明度色斑之后，悬浮栏、卡片掠过后能真的看到
+/// 材质在变亮变暗；浅色主题下同样的色斑读作一层柔和的粉紫雾，不会脏。
+struct CanvasBackdrop: View {
+    @Environment(\.colorScheme) private var scheme
+
+    /// 浅色主题下色斑要压得更低：底色本身就接近纯白，同样的透明度
+    /// 会把整个界面染成一层粉雾，顶部的搜索框和 Tab 全糊在一起。
+    private var intensity: Double { scheme == .dark ? 0.55 : 0.22 }
+
+    var body: some View {
+        ZStack {
+            Theme.canvas
+
+            GeometryReader { geo in
+                let w = geo.size.width
+                let h = geo.size.height
+                ZStack {
+                    Circle()
+                        .fill(Theme.pink.opacity(0.30))
+                        .frame(width: w * 0.9, height: w * 0.9)
+                        .blur(radius: 90)
+                        .offset(x: -w * 0.18, y: -h * 0.36)
+
+                    Circle()
+                        .fill(Theme.purple.opacity(0.26))
+                        .frame(width: w * 0.8, height: w * 0.8)
+                        .blur(radius: 100)
+                        .offset(x: w * 0.34, y: -h * 0.05)
+
+                    Circle()
+                        .fill(Theme.blue.opacity(0.18))
+                        .frame(width: w * 0.9, height: w * 0.9)
+                        .blur(radius: 110)
+                        .offset(x: -w * 0.3, y: h * 0.34)
+                }
+            }
+            .opacity(intensity)
+        }
+        .ignoresSafeArea()
     }
 }
 

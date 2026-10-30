@@ -11,7 +11,7 @@ struct LoginView: View {
 
     var body: some View {
         ZStack {
-            Theme.canvas.ignoresSafeArea()
+            CanvasBackdrop()
 
             // 光斑让玻璃有可折射的内容
             Circle()

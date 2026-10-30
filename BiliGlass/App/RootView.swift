@@ -32,6 +32,24 @@ struct RootView: View {
             tab(index: 2, path: $historyPath) { HistoryView() }
             tab(index: 3, path: $profilePath) { ProfileView() }
 
+            // 底部渐隐：内容滚到悬浮栏下方时自然淡进底色，
+            // 而不是被一条实色边"切"断——这是 Apple TV 那种
+            // "内容继续延伸、只是被玻璃压暗"的关键
+            if !tabBarCovered {
+                LinearGradient(
+                    stops: [
+                        .init(color: Theme.canvasBottom.opacity(0), location: 0),
+                        .init(color: Theme.canvasBottom.opacity(0.72), location: 0.55),
+                        .init(color: Theme.canvasBottom.opacity(0.97), location: 1)
+                    ],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .frame(height: 128)
+                .allowsHitTesting(false)
+                .zIndex(9)
+            }
+
             // 被 push 的页面（详情页 / 全屏播放 / 搜索 / 各主页）自己会登记，
             // 登记期间把悬浮栏收起来：玻璃胶囊再不透明也会压住页面底部内容。
             if !tabBarCovered {
@@ -47,7 +65,7 @@ struct RootView: View {
         // 「已隐藏但仍在」的 TabBar 背板，深色外观下它仍按浅色渲染，
         // 屏幕上就是一条白边；换成自绘切换后没有这层了，再铺一层画布色
         // 保证任何缝隙都不会漏出窗口默认的白底。
-        .background(Theme.canvas.ignoresSafeArea())
+        .background(CanvasBackdrop())
         .animation(.snappy(duration: 0.24), value: tabBarCovered)
         .preferredColorScheme(AppSettings.shared.colorScheme)
         .tint(Theme.pink)

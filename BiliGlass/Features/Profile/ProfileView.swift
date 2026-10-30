@@ -6,7 +6,7 @@ struct ProfileView: View {
 
     var body: some View {
         ZStack {
-            Theme.canvas.ignoresSafeArea()
+            CanvasBackdrop()
 
             Circle()
                 .fill(Theme.blue.opacity(0.3))

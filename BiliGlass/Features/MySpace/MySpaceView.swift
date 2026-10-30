@@ -70,7 +70,7 @@ struct MySpaceView: View {
 
     var body: some View {
         ZStack {
-            Theme.canvas.ignoresSafeArea()
+            CanvasBackdrop()
 
             ScrollView {
                 VStack(spacing: 14) {
