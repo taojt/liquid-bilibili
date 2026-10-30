@@ -18,10 +18,10 @@ struct VideoFeedGrid: View {
     @State private var showLogin = false
     @State private var didAutoScroll = false
 
-    private let columns = [
-        GridItem(.flexible(), spacing: 12),
-        GridItem(.flexible(), spacing: 12)
-    ]
+    @Environment(\.horizontalSizeClass) private var sizeClass
+
+    /// iPhone 2 列，iPad 4 列（见 Layout.coverColumns）
+    private var columns: [GridItem] { DeviceLayout.coverGrid(sizeClass) }
 
     var body: some View {
         ScrollViewReader { proxy in
@@ -32,13 +32,9 @@ struct VideoFeedGrid: View {
                     .padding(.bottom, bottomInset)
             }
             .scrollIndicators(.hidden)
-            // 用 onScrollGeometryChange 而不是 GeometryReader + PreferenceKey：
-            // 后者每帧都要重排一次，长列表上代价明显。
-            .onScrollGeometryChange(for: CGFloat.self) { geometry in
-                geometry.contentOffset.y + geometry.contentInsets.top
-            } action: { _, offset in
-                onScroll?(offset)
-            }
+            // 折叠顶栏依赖滚动偏移。scrollOffsetChange 内部按系统版本选实现：
+            // iOS 18+ 走 onScrollGeometryChange，更老的退到 KVO 观察 contentOffset。
+            .scrollOffsetChange { onScroll?($0) }
             .refreshable {
                 await store.refresh()
             }
@@ -148,10 +144,8 @@ struct VideoFeedGrid: View {
                 Label("扫码登录", systemImage: "qrcode")
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(.white)
-                    .padding(.horizontal, 26)
-                    .padding(.vertical, 13)
             }
-            .buttonStyle(.glassProminent)
+            .buttonStyle(.liquidGlassProminent)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 90)
@@ -180,7 +174,7 @@ struct VideoFeedGrid: View {
             Button("重试") {
                 Task { await store.refresh() }
             }
-            .buttonStyle(.glassProminent)
+            .buttonStyle(.liquidGlassProminent)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 90)

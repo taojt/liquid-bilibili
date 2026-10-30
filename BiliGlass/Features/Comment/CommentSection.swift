@@ -120,7 +120,7 @@ struct CommentSection: View {
             .foregroundStyle(Theme.inkDim)
             .padding(.horizontal, 9)
             .padding(.vertical, 5)
-            .glassEffect(.regular.interactive(), in: .capsule)
+            .glassSurface(.regular.interactive(), in: .capsule)
         }
     }
 
@@ -180,7 +180,7 @@ struct CommentSection: View {
                 Button("重试") {
                     Task { await service.reload() }
                 }
-                .buttonStyle(.glass)
+                .buttonStyle(.liquidGlass)
                 .controlSize(.small)
             }
             .frame(maxWidth: .infinity)
@@ -229,7 +229,7 @@ struct CommentSection: View {
                         .foregroundStyle(Theme.inkDim)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 10)
-                        .glassEffect(.regular.interactive(), in: .capsule)
+                        .glassSurface(.regular.interactive(), in: .capsule)
                 }
                 .buttonStyle(.liquidPress)
                 .padding(.top, 10)

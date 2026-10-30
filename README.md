@@ -1,6 +1,6 @@
 # bilibili
 
-一个支持 iOS 27 液态玻璃（Liquid Glass）的第三方哔哩哔哩 iOS 客户端，基于 SwiftUI + Xcode 27 / iOS 27 SDK。
+一个支持 iOS 27 液态玻璃（Liquid Glass）的第三方哔哩哔哩 iOS 客户端，基于 SwiftUI + Xcode 27 / iOS 27 SDK。**iPhone 与 iPad 通用**，最低 iOS 17.0（旧系统上液态玻璃自动降级为自绘近似）。
 
 当前功能：首页四流（推荐/关注/热门/直播，**上滑自动折叠顶栏 + 悬浮玻璃底栏**）、搜索、**关注动态时间线**、观看历史（**支持断点续播**）、收藏夹、视频详情页与全屏播放、弹幕浮动层（**支持不透明度与显示区域设置**）、倍速播放、**点赞/投币/收藏**（**长按点赞一键三连**）、**视频评论区（回复 / 点赞 / 进发言人主页）**、**UP 主个人主页与投稿列表**、**我的主页（资料 / 账号属性 / 历史 / 收藏 / 点赞）**、**直播间实时弹幕与全屏**、扫码登录与会话持久化。App 图标提供常规 / 深色 / 着色三套变体，界面支持**跟随系统 / 白天 / 夜间**三种外观，主屏图标**长按/重按**可直达搜索与热门。
 
@@ -20,6 +20,7 @@
 | 手势 | 所有被推入的页面支持**左滑返回**（导航栏隐藏后系统手势被禁用，已修复）；播放区**长按加速**，全屏时**左半屏竖滑调亮度 / 右半屏竖滑调音量** |
 | 外观 | 近黑画布 + 品牌色极光底、封面即卡片的大圆角视觉（参考 Apple TV）；液态玻璃（iOS 26+ `glassEffect` + 自绘光学边缘）；**全局点按外围浮出椭圆液态玻璃**（跟随控件形状）；跟随系统 / 白天 / 夜间三种模式，明暗双套 App 图标 |
 | 快捷入口 | 主屏图标**重按（3D Touch）/ 长按（Haptic Touch）**弹出快捷菜单：**搜索**、**热门视频**两条直达，冷启动与后台唤起都能落地 |
+| 多设备 | **iPhone / iPad 通用**（`TARGETED_DEVICE_FAMILY = 1,2`）；iPad 上封面网格 4 列、底栏与正文限宽居中；最低 **iOS 17.0**，iOS 26 以下液态玻璃自动降级为自绘近似 |
 
 ## 示意图
 
@@ -62,6 +63,18 @@
 | 深色 · 我的 | 浅色 · 首页 |
 | --- | --- |
 | <img src="docs/screen-press-dark.png" width="230"/> | <img src="docs/screen-press-light.png" width="230"/> |
+
+**iPad**（封面 4 列、底栏与正文限宽居中）
+
+| 首页（iPadOS 17 真机） | 详情页（iPadOS 17 真机） |
+| --- | --- |
+| <img src="docs/ipad-home-ios17.png" width="330"/> | <img src="docs/ipad-detail-ios17.png" width="330"/> |
+
+上两张跑在 **iPad Pro 11" 2018 / iPadOS 17.6.1** 真机上——也就是**降级玻璃**的样子：没有实时折射，靠材质 + 顶光渐变，观感上仍是玻璃。下方两张是同款 App 在 iPad Pro 11" M5 模拟器（iOS 26）上走系统 `glassEffect` 的效果，可对比两种材质的差别。
+
+| 首页（iPadOS 26） | 详情页（iPadOS 26） |
+| --- | --- |
+| <img src="docs/ipad-home.png" width="330"/> | <img src="docs/ipad-detail.png" width="330"/> |
 
 ## 运行
 
@@ -221,11 +234,42 @@ xcodebuild -project BiliGlass.xcodeproj -scheme BiliGlass \
 
 **`glassEffect` 不能放进 `.background {}`。** 它是独立合成的材质层，挂成背景时会渲染到前景内容之上——二级 Tab 的轨道底这么写之后，选中项和未选中项的文字一起被糊成一团灰影，看起来像「文字消失」。正确写法是直接挂在容器身上：`HStack { ... }.glassEffect(.regular, in: .capsule)`，材质会落在容器内容的下方。
 
-用到的 iOS 26/27 API：`.glassEffect(_:in:)`、`GlassEffectContainer` + `glassEffectID`、`.buttonStyle(.glass)` / `.glassProminent`、`tabBarMinimizeBehavior(.onScrollDown)`、`scrollEdgeEffectStyle`、`backgroundExtensionEffect`、`navigationTransition(.zoom)` + `matchedTransitionSource`。
+用到的 iOS 26/27 API 全部收敛进了 `Design/GlassCompat.swift` 一层：`.glassEffect(_:in:)`、`GlassEffectContainer` + `glassEffectID`、`.buttonStyle(.glass)` / `.glassProminent`、`scrollEdgeEffectStyle`（另有 `navigationTransition(.zoom)` / `matchedTransitionSource` / `tabBarMinimizeBehavior` 这几个只在特定页面按需使用）。调用点只写语义，由兼容层决定走系统玻璃还是自绘近似——原因见下一节。
 
 **形状必须写进 `glassEffect(_:in:)` 的 `in:` 参数。** 只在外面套一层 `.clipShape(.rect(cornerRadius: 16))` 是无效的：玻璃材质本身仍按系统默认圆角生成（圆角半径接近高度的一半，看起来像胶囊），`clipShape` 只是把外层内容裁掉，于是「设置卡片两头变成椭圆」——玻璃形状和内容形状不是同一个东西。正确写法是 `glassEffect(.regular.tint(t).interactive(), in: RoundedRectangle(cornerRadius: corner, style: .continuous))`，`GlassPanel` 里由 `corner` 统一驱动。
 
 同理，圆形按钮要写 `in: .circle` 而不是先铺满再 clip。
+
+### iPad 支持与旧系统降级
+
+**为什么要降级**：原本部署目标是 iOS 26.2，直接吃系统的 Liquid Glass。要装到一台 iPadOS 17.6 的 iPad 上（iPad Pro 11" 2018，硬件上限就是 iPadOS 17），部署目标只能降到 17.0，于是所有 iOS 26 专属 API 都必须有降级路径。
+
+**收敛而不是分叉**：73 处玻璃调用点如果每处都写 `if #available`，会立刻变成两套实现各改一半。做法是先造一个语义层：
+
+```swift
+// 调用点只描述要什么
+.glassSurface(.regular.tint(Theme.pink).interactive(), in: .capsule)
+```
+
+`GlassSpec` 顶替了 iOS 26 的 `Glass` 类型（后者在部署目标 17 下连类型名都写不出来），`glassSurface` 内部按版本分派：iOS 26+ 走系统 `glassEffect`，旧系统走 `LegacyGlass`（`.ultraThinMaterial` + tint 色层 + 顶光渐变）。
+
+自绘近似不是阉割版：`glassEffect` 的观感可以拆成「毛玻璃底色 + 顶光高光 + 轻微提亮」三件事，`.ultraThinMaterial` 加两层渐变能还原八九成。真正缺的只有实时折射——而本 App 玻璃下方基本都是纯色画布加极光色斑，折射差异肉眼分不出来。
+
+同理处理了另外四类：
+
+| 原 API | iOS 26 行为 | 旧系统降级 |
+| --- | --- | --- |
+| `GlassEffectContainer` | 相邻玻璃吸附融合 | `GlassFusion` 直接透传，各自独立 |
+| `glassEffectID` | 玻璃在两点间流动 | `matchedGeometryEffect`，位移补间一致 |
+| `.buttonStyle(.glass)` / `.glassProminent` | 系统玻璃按钮 | 自绘胶囊，**两版本统一**（系统样式各版会微调，自绘更稳） |
+| `onScrollGeometryChange` (iOS 18) | 滚动偏移回调 | KVO 观察底层 `UIScrollView.contentOffset` |
+| `scrollEdgeEffectStyle` | 顶部硬边缘 | 系统默认行为 |
+
+**iPad 布局**：设备族开到 `1,2` 后有两处按手机调死的尺寸会明显不对，都在 `Design/DeviceLayout.swift` 里按 `horizontalSizeClass` 分档——封面网格 iPhone 2 列 / iPad 4 列（否则一张封面近 600pt），悬浮底栏最大宽 460pt（否则 4 个标签平摊到 1200pt）。正文另加 760pt 上限并居中，播放器保持全宽。
+
+`DeviceLayout` 最初叫 `Layout`，直接撞上 SwiftUI 的 `Layout` 协议——`MySpaceView` 里那个自定义布局 `: Layout` 当场报 `inheritance from non-protocol type`。命名空间冲突在 Swift 里不会提醒，只会在大括号错位后才炸出来。
+
+还有个签名相关的前提：iPad 首次连接需要 `devicectl manage pair`，并且必须在设备上打开**开发者模式**（设置 → 隐私与安全性），否则 `xcodebuild` 只会报一个含糊的 destination 超时。
 
 ### 视觉基调
 
@@ -618,7 +662,7 @@ iOS 27 SDK 的两个坑：`ContentSource(playerLayer:playbackDelegate:)` 和 `AV
 ```
 BiliGlass/
 ├── App/          入口（AppDelegate / SceneDelegate）+ 根视图 + 自绘四项悬浮底栏
-├── Design/       视觉令牌（语义色）与玻璃组件
+├── Design/       视觉令牌（语义色）、玻璃组件、玻璃兼容层（iOS 17 降级）、设备适配参数
 ├── Models/       接口 DTO、弹幕轨道调度、直播弹幕模型、画质映射
 ├── Network/      HTTP 客户端、WBI 签名、Cookie 管理
 ├── Services/     接口门面、登录态、播放内核、弹幕解析、直播弹幕 WS 客户端、

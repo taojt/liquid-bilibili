@@ -2,10 +2,13 @@ name: BiliGlass
 
 options:
   bundleIdPrefix: com.biliglass
-  # 用 iOS 27 SDK 编译（Liquid Glass v2 材质由 SDK 决定），
-  # 部署目标设 26.2 以便在本机现有模拟器运行时上验证。
+  # 用 iOS 27 SDK 编译（Liquid Glass v2 材质由 SDK 决定）。
+  # 部署目标降到 17.0：为了装到 iPadOS 17.6 的真机 iPad 上。
+  # iOS 26 专属 API（glassEffect / GlassEffectContainer / scrollEdgeEffect 等）
+  # 全部集中在 Design/GlassCompat.swift 一处做 @available 分支，
+  # 旧系统退化成「材质 + 高光描边」的近似玻璃，调用点写法保持一致。
   deploymentTarget:
-    iOS: "26.2"
+    iOS: "17.0"
   createIntermediateGroups: true
   groupSortPosition: top
 
@@ -33,7 +36,8 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.biliglass.app
         PRODUCT_NAME: BiliGlass
-        TARGETED_DEVICE_FAMILY: "1"
+        # 1=iPhone, 2=iPad
+        TARGETED_DEVICE_FAMILY: "1,2"
         MARKETING_VERSION: "1.0"
         CURRENT_PROJECT_VERSION: "1"
         # 应用图标（三套变体：默认 / 深色 / 着色），由 scripts/generate-icon.swift 生成
@@ -52,6 +56,13 @@ targets:
         UIRequiresFullScreen: true
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        # iPad 要求四向都声明，否则上架校验不过；本 App 靠 OrientationLock
+        # 在运行期锁竖屏，只有播放页放开旋转
+        UISupportedInterfaceOrientations~ipad:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
           - UIInterfaceOrientationLandscapeLeft
           - UIInterfaceOrientationLandscapeRight
         NSPhotoLibraryAddUsageDescription: 用于保存图片

@@ -17,10 +17,10 @@ struct LiveListView: View {
     /// 否则会嵌在首页的 segmented 区域里，横屏时上面还露着首页的顶栏。
     @State private var playing: LiveRoom?
 
-    private let columns = [
-        GridItem(.flexible(), spacing: 12),
-        GridItem(.flexible(), spacing: 12)
-    ]
+    @Environment(\.horizontalSizeClass) private var sizeClass
+
+    /// iPhone 2 列，iPad 4 列（见 Layout.coverColumns）
+    private var columns: [GridItem] { DeviceLayout.coverGrid(sizeClass) }
 
     var body: some View {
         list
@@ -37,11 +37,7 @@ struct LiveListView: View {
                 .padding(.bottom, 110)
         }
         .scrollIndicators(.hidden)
-        .onScrollGeometryChange(for: CGFloat.self) { geometry in
-            geometry.contentOffset.y + geometry.contentInsets.top
-        } action: { _, offset in
-            onScroll?(offset)
-        }
+        .scrollOffsetChange { onScroll?($0) }
         .refreshable { await reload() }
         .task {
             if let id = DebugEntry.liveRoom {
@@ -85,7 +81,7 @@ struct LiveListView: View {
                         .foregroundStyle(Theme.inkDim)
                         .multilineTextAlignment(.center)
                     Button("重试") { Task { await reload() } }
-                        .buttonStyle(.glassProminent)
+                        .buttonStyle(.liquidGlassProminent)
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 90)
@@ -161,7 +157,7 @@ struct LiveCard: View {
         }
         .padding(8)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .glassEffect(.regular, in: .rect(cornerRadius: 18))
+        .glassSurface(.regular, in: .rect(cornerRadius: 18))
     }
 
     private var cover: some View {
@@ -202,7 +198,7 @@ struct LiveCard: View {
             .foregroundStyle(Theme.ink)
             .padding(.horizontal, 6)
             .padding(.vertical, 3)
-            .glassEffect(.regular, in: .capsule)
+            .glassSurface(.regular, in: .capsule)
             .padding(5)
     }
 

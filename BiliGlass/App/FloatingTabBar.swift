@@ -51,7 +51,7 @@ struct FloatingTabBar: View {
     }
 
     var body: some View {
-        GlassEffectContainer(spacing: 10) {
+        GlassFusion(spacing: 10) {
             HStack(spacing: 0) {
                 ForEach(items.indices, id: \.self) { index in
                     button(index: index)
@@ -69,11 +69,14 @@ struct FloatingTabBar: View {
             //    会渲染成烟熏黑，和浅色主题直接打架。
             // `.regular` 本身就是「透光 + 边缘折射 + 一层很薄的乳白」，最贴近要的效果；
             // 标签可读性靠下面那圈描边阴影解决，比加厚材质划算。
-            .glassEffect(.regular, in: barShape)
+            .glassSurface(.regular, in: barShape)
         }
         .liquidEdge(barShape, lineWidth: 1.1, elevated: true)
         .padding(.horizontal, 12)
         .padding(.bottom, 6)
+        // iPad 上限宽。满宽的话 4 个标签会平摊到 1200pt，
+        // 点一下要横跨半个屏幕，而且一条这么长的玻璃也不像"一条栏"了
+        .frame(maxWidth: DeviceLayout.maxTabBarWidth)
         // 切换 Tab 时给一次轻微触感，配合下面的液态点按
         .sensoryFeedback(.selection, trigger: selection)
     }
@@ -119,12 +122,12 @@ struct FloatingTabBar: View {
     /// 品牌色交给图标和文字去承担，椭圆本身保持中性玻璃。
     private var selectionOval: some View {
         Capsule(style: .continuous)
-            .glassEffect(
+            .glassSurface(
                 .regular.tint(Theme.pink.opacity(0.10)).interactive(),
                 in: .capsule
             )
             .liquidEdge(Capsule(style: .continuous), lineWidth: 1)
-            .glassEffectID("tab-active", in: tabNamespace)
+            .glassFusionID("tab-active", in: tabNamespace)
             .padding(.horizontal, 1)
     }
 }

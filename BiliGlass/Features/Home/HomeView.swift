@@ -195,7 +195,7 @@ struct HomeView: View {
                             endPoint: .bottomTrailing
                         )
                     )
-                    .glassEffect(.regular.tint(Theme.pink.opacity(0.55)), in: shape)
+                    .glassSurface(.regular.tint(Theme.pink.opacity(0.55)), in: shape)
             }
             .liquidEdge(shape, lineWidth: 0.9)
             .shadow(color: Theme.pink.opacity(0.35), radius: 8, y: 3)
@@ -210,7 +210,7 @@ struct HomeView: View {
                 .font(.system(size: 13, weight: .semibold))
                 .foregroundStyle(Theme.ink)
                 .frame(width: 32, height: 32)
-                .glassEffect(.regular.interactive(), in: .circle)
+                .glassSurface(.regular.interactive(), in: .circle)
                 .liquidEdge(Circle(), lineWidth: 0.8)
         }
         .buttonStyle(.iconPress)
@@ -244,7 +244,7 @@ struct HomeView: View {
         }
         .padding(.horizontal, 13)
         .frame(height: 36)
-        .glassEffect(.regular.interactive(), in: .capsule)
+        .glassSurface(.regular.interactive(), in: .capsule)
         .liquidEdge(Capsule(style: .continuous), lineWidth: 0.9)
     }
 
@@ -292,7 +292,7 @@ struct HomeView: View {
             .font(.system(size: 14, weight: .semibold))
             .foregroundStyle(Theme.ink)
             .frame(width: 32, height: 32)
-            .glassEffect(.regular.tint(Theme.pink).interactive(), in: .circle)
+            .glassSurface(.regular.tint(Theme.pink).interactive(), in: .circle)
             .liquidEdge(Circle(), lineWidth: 0.8)
     }
 }

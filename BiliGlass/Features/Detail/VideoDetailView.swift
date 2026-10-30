@@ -38,6 +38,7 @@ struct VideoDetailView: View {
     /// 画中画（小窗播放）管理，全局单例
     private var pip: PiPManager { PiPManager.shared }
 
+    @Environment(\.horizontalSizeClass) private var sizeClass
     @State private var isFullscreen = false
     /// 上一次同步到布局的物理方向。方向同步只认「变化」，防止
     /// 转屏过程中补发的同方向通知把全屏状态打回去
@@ -128,6 +129,9 @@ struct VideoDetailView: View {
                     }
                     .padding(.horizontal, Theme.contentPadding)
                     .padding(.top, 16)
+                    // iPad 上整页铺满会让一行文字横跨整个屏幕；
+                    // 播放器保持全宽（视频本来就该占满），信息区居中限宽
+                    .readableWidth()
                 }
                 .padding(.bottom, 40)
             }
@@ -297,7 +301,7 @@ struct VideoDetailView: View {
                     .foregroundStyle(Theme.inkDim)
             }
             .padding(18)
-            .glassEffect(.regular, in: .rect(cornerRadius: 18))
+            .glassSurface(.regular, in: .rect(cornerRadius: 18))
         } else if let message = engine.errorMessage ?? loadError {
             VStack(spacing: 10) {
                 Image(systemName: "exclamationmark.triangle.fill")
@@ -312,12 +316,12 @@ struct VideoDetailView: View {
                     loadError = nil
                     Task { await reloadPlayback() }
                 }
-                .buttonStyle(.glass)
+                .buttonStyle(.liquidGlass)
                 .controlSize(.small)
             }
             .padding(16)
             .frame(maxWidth: 260)
-            .glassEffect(.regular, in: .rect(cornerRadius: 18))
+            .glassSurface(.regular, in: .rect(cornerRadius: 18))
         }
     }
 
@@ -397,7 +401,7 @@ struct VideoDetailView: View {
                 .frame(width: 34, height: 34)
         }
         .buttonStyle(.iconPress)
-        .glassEffect(
+        .glassSurface(
             danmakuSettings.isDefault
                 ? .regular.interactive()
                 : .regular.tint(Theme.pink.opacity(0.4)).interactive(),
@@ -417,7 +421,7 @@ struct VideoDetailView: View {
                 .frame(width: 34, height: 34)
         }
         .buttonStyle(.iconPress)
-        .glassEffect(
+        .glassSurface(
             showDanmaku
                 ? .regular.tint(Theme.pink.opacity(0.55)).interactive()
                 : .regular.interactive(),
@@ -446,7 +450,7 @@ struct VideoDetailView: View {
                 .foregroundStyle(Theme.ink)
                 .padding(.horizontal, 10)
                 .frame(height: 34)
-                .glassEffect(
+                .glassSurface(
                     engine.playbackRate == 1.0
                         ? .regular.interactive()
                         : .regular.tint(Theme.pink.opacity(0.55)).interactive(),
@@ -569,7 +573,7 @@ struct VideoDetailView: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 10)
-        .glassEffect(.regular, in: .rect(cornerRadius: 22))
+        .glassSurface(.regular, in: .rect(cornerRadius: 22))
     }
 
     private var qualityMenu: some View {
@@ -591,7 +595,7 @@ struct VideoDetailView: View {
                 .foregroundStyle(Theme.ink)
                 .padding(.horizontal, 10)
                 .padding(.vertical, 6)
-                .glassEffect(.regular.tint(Theme.pink).interactive(), in: .capsule)
+                .glassSurface(.regular.tint(Theme.pink).interactive(), in: .capsule)
         }
     }
 
@@ -638,7 +642,7 @@ struct VideoDetailView: View {
             .foregroundStyle(Theme.inkDim)
             .padding(.horizontal, 10)
             .padding(.vertical, 7)
-            .glassEffect(.regular, in: .capsule)
+            .glassSurface(.regular, in: .capsule)
     }
 
     // MARK: - 互动操作栏（点赞 / 投币 / 收藏 / UP主页）
@@ -739,7 +743,7 @@ struct VideoDetailView: View {
             .frame(height: 54)
         }
         .buttonStyle(.liquidPress)
-        .glassEffect(
+        .glassSurface(
             active
                 ? .regular.tint(Theme.pink.opacity(0.28)).interactive()
                 : .regular.interactive(),
@@ -772,7 +776,7 @@ struct VideoDetailView: View {
             .frame(height: 54)
         }
         .buttonStyle(.liquidPress)
-        .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 16))
+        .glassSurface(.regular.interactive(), in: .rect(cornerRadius: 16))
         .disabled(detail == nil)
     }
 
@@ -784,7 +788,7 @@ struct VideoDetailView: View {
                 .foregroundStyle(Theme.ink)
                 .padding(.horizontal, 16)
                 .padding(.vertical, 9)
-                .glassEffect(.regular, in: .capsule)
+                .glassSurface(.regular, in: .capsule)
                 .padding(.bottom, 26)
                 .transition(.move(edge: .bottom).combined(with: .opacity))
                 .allowsHitTesting(false)
@@ -843,7 +847,7 @@ struct VideoDetailView: View {
                     .font(.system(size: 16))
                     .foregroundStyle(Theme.ink)
                     .frame(width: 42, height: 42)
-                    .glassEffect(.regular.tint(Theme.purple), in: .circle)
+                    .glassSurface(.regular.tint(Theme.purple), in: .circle)
             }
         }
         .frame(width: 42, height: 42)
@@ -874,7 +878,7 @@ struct VideoDetailView: View {
             }
             .padding(16)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .glassEffect(.regular, in: .rect(cornerRadius: 20))
+            .glassSurface(.regular, in: .rect(cornerRadius: 20))
         }
     }
 
@@ -892,13 +896,7 @@ struct VideoDetailView: View {
                         .foregroundStyle(Theme.ink)
                 }
 
-                LazyVGrid(
-                    columns: [
-                        GridItem(.flexible(), spacing: 12),
-                        GridItem(.flexible(), spacing: 12)
-                    ],
-                    spacing: 12
-                ) {
+                LazyVGrid(columns: DeviceLayout.coverGrid(sizeClass), spacing: 12) {
                     ForEach(related) { model in
                         NavigationLink {
                             VideoDetailView(bvid: model.id, fallbackTitle: model.title)

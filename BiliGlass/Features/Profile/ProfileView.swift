@@ -29,9 +29,11 @@ struct ProfileView: View {
                 }
                 .padding(.horizontal, Theme.contentPadding)
                 .padding(.bottom, 110)
+                // iPad 上卡片拉满全宽会显得空，「扫码登录」也会横跨整屏
+                .readableWidth(640)
             }
             .scrollIndicators(.hidden)
-            .scrollEdgeEffectStyle(.hard, for: .top)
+            .hardTopScrollEdge()
         }
         .navigationBarTitleDisplayMode(.inline)
         .toolbar(.hidden, for: .navigationBar)
@@ -88,7 +90,7 @@ struct ProfileView: View {
             .font(.system(size: 22, weight: .medium))
             .foregroundStyle(Theme.ink)
             .frame(width: 56, height: 56)
-            .glassEffect(.regular.tint(Theme.purple), in: .circle)
+            .glassSurface(.regular.tint(Theme.purple), in: .circle)
     }
 
     // MARK: - 外观
@@ -173,7 +175,7 @@ struct ProfileView: View {
                 .font(.system(size: 13))
                 .foregroundStyle(Theme.pink)
                 .frame(width: 26, height: 26)
-                .glassEffect(.regular.tint(Theme.pink.opacity(0.28)), in: .circle)
+                .glassSurface(.regular.tint(Theme.pink.opacity(0.28)), in: .circle)
 
             Text(title)
                 .font(.system(size: 13, weight: .medium))
@@ -237,9 +239,8 @@ struct ProfileView: View {
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(.white)
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 14)
             }
-            .buttonStyle(.glassProminent)
+            .buttonStyle(.liquidGlassProminent)
         }
         .padding(.top, 10)
     }
@@ -252,8 +253,7 @@ struct ProfileView: View {
                 .font(.system(size: 14, weight: .medium))
                 .foregroundStyle(.red.opacity(0.9))
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, 13)
         }
-        .buttonStyle(.glass)
+        .buttonStyle(.liquidGlass)
     }
 }

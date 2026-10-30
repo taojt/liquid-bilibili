@@ -77,7 +77,7 @@ struct FavoritesView: View {
                 .font(.system(size: 15))
                 .foregroundStyle(Theme.pink)
                 .frame(width: 38, height: 38)
-                .glassEffect(.regular.tint(Theme.pink.opacity(0.3)), in: .circle)
+                .glassSurface(.regular.tint(Theme.pink.opacity(0.3)), in: .circle)
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(folder.title)
@@ -96,7 +96,7 @@ struct FavoritesView: View {
                 .foregroundStyle(Theme.inkFaint)
         }
         .padding(14)
-        .glassEffect(.regular, in: .rect(cornerRadius: 20))
+        .glassSurface(.regular, in: .rect(cornerRadius: 20))
     }
 
     // MARK: - 状态
@@ -115,10 +115,8 @@ struct FavoritesView: View {
                 Label("扫码登录", systemImage: "qrcode")
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(.white)
-                    .padding(.horizontal, 26)
-                    .padding(.vertical, 13)
             }
-            .buttonStyle(.glassProminent)
+            .buttonStyle(.liquidGlassProminent)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 90)
@@ -131,7 +129,7 @@ struct FavoritesView: View {
                 .foregroundStyle(Theme.inkDim)
                 .multilineTextAlignment(.center)
             Button("重试") { Task { await load() } }
-                .buttonStyle(.glassProminent)
+                .buttonStyle(.liquidGlassProminent)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 80)

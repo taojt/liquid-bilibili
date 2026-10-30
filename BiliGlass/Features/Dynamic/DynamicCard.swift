@@ -34,7 +34,7 @@ struct DynamicCard: View {
         }
         .padding(13)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .glassEffect(.regular, in: .rect(cornerRadius: 20))
+        .glassSurface(.regular, in: .rect(cornerRadius: 20))
     }
 
     // MARK: - 作者行
@@ -84,7 +84,7 @@ struct DynamicCard: View {
                     .font(.system(size: 11))
                     .foregroundStyle(Theme.ink)
                     .frame(width: 30, height: 30)
-                    .glassEffect(.regular.tint(Theme.purple.opacity(0.7)), in: .circle)
+                    .glassSurface(.regular.tint(Theme.purple.opacity(0.7)), in: .circle)
             }
         }
         .frame(width: 30, height: 30)
