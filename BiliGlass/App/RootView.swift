@@ -32,25 +32,25 @@ struct RootView: View {
             tab(index: 2, path: $historyPath) { HistoryView() }
             tab(index: 3, path: $profilePath) { ProfileView() }
 
-            // 底部渐隐：内容滚到悬浮栏下方时淡进底色。
+            // 底部渐隐：让内容「滚出视野」，不是把内容盖住。
             //
-            // 刻意**不压满**——末端只到 0.82。压成不透明的话玻璃背后就是一片纯色，
-            // 折射无从发生，底栏会退化成一块白板；留一点内容透出来，卡片从
-            // 玻璃下划过时才能看见材质在变亮变暗。
+            // 这里刻意压得很轻（末端 0.42）。之前压到 0.82 的时候，
+            // 内容在到达玻璃之前就已经被洗成一片纯底色，玻璃背后什么都没有，
+            // 透光、折射全都无从发生，栏看起来就是一块实心白板。
+            // 留够色彩和明暗，玻璃才有东西可透。
             if !tabBarCovered {
                 LinearGradient(
                     stops: [
                         .init(color: Theme.canvasBottom.opacity(0), location: 0),
-                        .init(color: Theme.canvasBottom.opacity(0.42), location: 0.45),
-                        .init(color: Theme.canvasBottom.opacity(0.82), location: 1)
+                        .init(color: Theme.canvasBottom.opacity(0.20), location: 0.5),
+                        .init(color: Theme.canvasBottom.opacity(0.42), location: 1)
                     ],
                     startPoint: .top,
                     endPoint: .bottom
                 )
-                .frame(height: 118)
-                // 必须一路铺到物理屏幕底边：只铺安全区的话，home indicator
-                // 那一条（约 34pt）会漏出来，卡片清清楚楚地露在栏下面，
-                // 视觉上像是栏没落到底
+                .frame(height: 104)
+                // 一路铺到物理屏幕底边：只铺安全区的话，home indicator
+                // 那一条（约 34pt）会漏出来，内容原样从栏下面露出
                 .ignoresSafeArea(edges: .bottom)
                 .allowsHitTesting(false)
                 .zIndex(9)
