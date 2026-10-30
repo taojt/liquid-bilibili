@@ -50,6 +50,12 @@
 | --- | --- | --- | --- |
 | <img src="docs/screen-light-feed.png" width="230"/> | <img src="docs/screen-light-detail.png" width="230"/> | <img src="docs/screen-light-profile.png" width="230"/> | <img src="docs/screen-feed-collapsed-dark.png" width="230"/> |
 
+**点按反馈**（用 `-debugPressPreview` 让所有按钮常显按下态，展示外扩的椭圆液态玻璃）
+
+| 深色 · 我的 | 浅色 · 首页 |
+| --- | --- |
+| <img src="docs/screen-press-dark.png" width="230"/> | <img src="docs/screen-press-light.png" width="230"/> |
+
 ## 运行
 
 ```bash
