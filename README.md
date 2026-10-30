@@ -64,6 +64,12 @@
 | --- | --- |
 | <img src="docs/screen-press-dark.png" width="230"/> | <img src="docs/screen-press-light.png" width="230"/> |
 
+**iPad**（iPad Pro 11"，封面 4 列、底栏与正文限宽居中）
+
+| iPad 首页 | iPad 详情页 |
+| --- | --- |
+| <img src="docs/ipad-home.png" width="330"/> | <img src="docs/ipad-detail.png" width="330"/> |
+
 ## 运行
 
 ```bash
