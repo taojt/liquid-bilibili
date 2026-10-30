@@ -66,7 +66,6 @@ struct RootView: View {
                     .transition(.opacity.combined(with: .offset(y: 24)))
             }
         }
-        .environment(\.rootTabIndex, selection)
         // 兜底底色。原先根部的系统 `TabView` 会在屏幕最底部留一条
         // 「已隐藏但仍在」的 TabBar 背板，深色外观下它仍按浅色渲染，
         // 屏幕上就是一条白边；换成自绘切换后没有这层了，再铺一层画布色
@@ -137,6 +136,13 @@ struct RootView: View {
             .allowsHitTesting(active)
             .accessibilityHidden(!active)
             .zIndex(active ? 1 : 0)
+            // 每个 Tab 固定播报自己的序号。
+            //
+            // 这里**不能**用根部的 `selection`：被 push 的页面靠环境里的
+            // tabIndex 登记「我盖住的是哪个 Tab」，一旦这个值是"当前选中"，
+            // 页面在旋转 / 尺寸变化后重建时就会用那时选中的 Tab 重新登记——
+            // 于是切到哪个 Tab，哪个 Tab 的底栏就被这个错位的登记钉死消失。
+            .environment(\.rootTabIndex, index)
         }
     }
 }

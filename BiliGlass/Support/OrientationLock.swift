@@ -12,8 +12,21 @@ import UIKit
 ///   某个固定方向，出现"手机转向左、画面转向右"的错位。
 /// - **手动按钮**：用户点全屏/退出，才需要显式请求某个方向。
 enum OrientationLock {
-    /// 由 AppDelegate 读取。默认竖屏。
-    static var mask: UIInterfaceOrientationMask = .portrait
+    /// 是否在 iPad 上运行。iPad 的方向策略与手机完全不同：
+    /// 用户会把它当一块"屏幕"横着用，锁竖屏的结果是横屏时 App 只占中间一条、
+    /// 两侧露出桌面——看起来就像"没适配横屏"。
+    private static var isPad: Bool {
+        UIDevice.current.userInterfaceIdiom == .pad
+    }
+
+    /// 非播放页时的默认方向。iPhone 锁竖屏；iPad 全程放开，
+    /// 布局靠 `DeviceLayout` 的自适应列数兜住。
+    private static var idleMask: UIInterfaceOrientationMask {
+        isPad ? .all : .portrait
+    }
+
+    /// 由 AppDelegate 读取。
+    static var mask: UIInterfaceOrientationMask = idleMask
 
     /// 放开旋转（详情页/直播页驻留期间调用）
     static func allowRotation() {
@@ -21,10 +34,13 @@ enum OrientationLock {
         refreshSupportedOrientations()
     }
 
-    /// 锁回竖屏，并把界面转回竖屏（离开播放页时调用）
+    /// 锁回默认方向，并把界面转回去（离开播放页时调用）。
+    /// iPad 上只恢复 mask、不主动转屏：用户可能正横着看列表，
+    /// 强行转回竖屏会把整页内容甩一下。
     static func lockPortrait() {
-        mask = .portrait
+        mask = idleMask
         refreshSupportedOrientations()
+        guard !isPad else { return }
         request(.portrait)
     }
 
@@ -36,9 +52,12 @@ enum OrientationLock {
         request(preferredLandscape())
     }
 
-    /// 手动退出全屏：请求竖屏
+    /// 手动退出全屏：请求竖屏。
+    /// iPad 上退出全屏只是收起播放层，方向保持用户当前握持的方向。
     static func forcePortrait() {
+        mask = idleMask
         refreshSupportedOrientations()
+        guard !isPad else { return }
         request(.portrait)
     }
 

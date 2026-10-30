@@ -17,10 +17,8 @@ struct UserSpaceView: View {
     @State private var isFollowing: Bool?
     @State private var followBusy = false
 
-    @Environment(\.horizontalSizeClass) private var sizeClass
-
     /// iPhone 2 列，iPad 4 列（见 Layout.coverColumns）
-    private var columns: [GridItem] { DeviceLayout.coverGrid(sizeClass) }
+    private var columns: [GridItem] { DeviceLayout.coverGrid() }
 
     init(mid: Int, fallbackName: String = "", fallbackFace: String? = nil) {
         self.mid = mid

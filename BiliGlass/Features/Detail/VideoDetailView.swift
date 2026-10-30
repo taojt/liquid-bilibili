@@ -38,7 +38,6 @@ struct VideoDetailView: View {
     /// 画中画（小窗播放）管理，全局单例
     private var pip: PiPManager { PiPManager.shared }
 
-    @Environment(\.horizontalSizeClass) private var sizeClass
     @State private var isFullscreen = false
     /// 上一次同步到布局的物理方向。方向同步只认「变化」，防止
     /// 转屏过程中补发的同方向通知把全屏状态打回去
@@ -155,6 +154,9 @@ struct VideoDetailView: View {
     private var playerBox: some View {
         Color.black
             .aspectRatio(16 / 9, contentMode: .fit)
+            // iPad 横屏时 16:9 会吃掉八成屏高，压一下让下方标题/评论露出一点。
+            // 视频层是 resizeAspect，被压后自动居中留黑边，不会变形
+            .frame(maxHeight: DeviceLayout.playerHeightLimit)
             .overlay {
                 if let player = engine.player {
                     PlayerLayerView(player: player)
@@ -896,7 +898,7 @@ struct VideoDetailView: View {
                         .foregroundStyle(Theme.ink)
                 }
 
-                LazyVGrid(columns: DeviceLayout.coverGrid(sizeClass), spacing: 12) {
+                LazyVGrid(columns: DeviceLayout.coverGrid(), spacing: 12) {
                     ForEach(related) { model in
                         NavigationLink {
                             VideoDetailView(bvid: model.id, fallbackTitle: model.title)

@@ -17,10 +17,8 @@ struct LiveListView: View {
     /// 否则会嵌在首页的 segmented 区域里，横屏时上面还露着首页的顶栏。
     @State private var playing: LiveRoom?
 
-    @Environment(\.horizontalSizeClass) private var sizeClass
-
     /// iPhone 2 列，iPad 4 列（见 Layout.coverColumns）
-    private var columns: [GridItem] { DeviceLayout.coverGrid(sizeClass) }
+    private var columns: [GridItem] { DeviceLayout.coverGrid() }
 
     var body: some View {
         list

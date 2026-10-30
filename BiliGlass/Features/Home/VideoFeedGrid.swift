@@ -18,10 +18,8 @@ struct VideoFeedGrid: View {
     @State private var showLogin = false
     @State private var didAutoScroll = false
 
-    @Environment(\.horizontalSizeClass) private var sizeClass
-
     /// iPhone 2 列，iPad 4 列（见 Layout.coverColumns）
-    private var columns: [GridItem] { DeviceLayout.coverGrid(sizeClass) }
+    private var columns: [GridItem] { DeviceLayout.coverGrid() }
 
     var body: some View {
         ScrollViewReader { proxy in

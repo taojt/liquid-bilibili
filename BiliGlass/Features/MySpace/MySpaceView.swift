@@ -59,10 +59,8 @@ struct MySpaceView: View {
     @State private var folderError: String?
     @State private var foldersLoaded = false
 
-    @Environment(\.horizontalSizeClass) private var sizeClass
-
     /// iPhone 2 列，iPad 4 列（见 Layout.coverColumns）
-    private var columns: [GridItem] { DeviceLayout.coverGrid(sizeClass) }
+    private var columns: [GridItem] { DeviceLayout.coverGrid() }
 
     private var mid: Int {
         overrideMid ?? auth.userID ?? card?.card?.mid ?? 0

@@ -20,10 +20,8 @@ struct SearchView: View {
     @State private var hasMore = false
     @FocusState private var focused: Bool
 
-    @Environment(\.horizontalSizeClass) private var sizeClass
-
     /// iPhone 2 列，iPad 4 列（见 Layout.coverColumns）
-    private var columns: [GridItem] { DeviceLayout.coverGrid(sizeClass) }
+    private var columns: [GridItem] { DeviceLayout.coverGrid() }
 
     var body: some View {
         ZStack {
