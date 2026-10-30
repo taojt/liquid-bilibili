@@ -84,7 +84,7 @@ struct VideoGridCard: View {
         .foregroundStyle(.white)
         .padding(.horizontal, 7)
         .padding(.vertical, 3.5)
-        .glassEffect(.regular, in: .capsule)
+        .glassSurface(.regular, in: .capsule)
         .liquidEdge(Capsule(style: .continuous), lineWidth: 0.7)
         .padding(7)
     }

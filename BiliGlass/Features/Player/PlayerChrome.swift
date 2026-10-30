@@ -20,7 +20,7 @@ struct PlayerSkipButton: View {
                 .frame(width: size, height: size)
         }
         .buttonStyle(.iconPress)
-        .glassEffect(.regular.interactive(), in: .circle)
+        .glassSurface(.regular.interactive(), in: .circle)
         .accessibilityLabel(forward ? "快进 10 秒" : "后退 10 秒")
     }
 }
@@ -56,7 +56,7 @@ struct PlayerCenterCluster: View {
                 .frame(width: playSize, height: playSize)
         }
         .buttonStyle(LiquidPressStyle(scale: 0.92, spread: 6))
-        .glassEffect(.regular.tint(Theme.pink.opacity(0.35)).interactive(), in: .circle)
+        .glassSurface(.regular.tint(Theme.pink.opacity(0.35)).interactive(), in: .circle)
         .accessibilityLabel(isPlaying ? "暂停" : "播放")
     }
 }
@@ -103,7 +103,7 @@ struct PlayerProgressCapsule: View {
         }
         .padding(.horizontal, compact ? 13 : 18)
         .padding(.vertical, compact ? 7 : 11)
-        .glassEffect(.regular, in: .capsule)
+        .glassSurface(.regular, in: .capsule)
         .animation(.easeOut(duration: 0.18), value: dragging)
     }
 
@@ -204,7 +204,7 @@ struct PlayerHUDBubble: View {
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 14)
-            .glassEffect(.regular, in: .rect(cornerRadius: 22))
+            .glassSurface(.regular, in: .rect(cornerRadius: 22))
 
         case .speed(let rate):
             HStack(spacing: 7) {
@@ -219,7 +219,7 @@ struct PlayerHUDBubble: View {
             .foregroundStyle(.white)
             .padding(.horizontal, 14)
             .padding(.vertical, 9)
-            .glassEffect(.regular, in: .capsule)
+            .glassSurface(.regular, in: .capsule)
         }
     }
 }

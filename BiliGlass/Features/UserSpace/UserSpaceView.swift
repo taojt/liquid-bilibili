@@ -17,10 +17,10 @@ struct UserSpaceView: View {
     @State private var isFollowing: Bool?
     @State private var followBusy = false
 
-    private let columns = [
-        GridItem(.flexible(), spacing: 12),
-        GridItem(.flexible(), spacing: 12)
-    ]
+    @Environment(\.horizontalSizeClass) private var sizeClass
+
+    /// iPhone 2 列，iPad 4 列（见 Layout.coverColumns）
+    private var columns: [GridItem] { DeviceLayout.coverGrid(sizeClass) }
 
     init(mid: Int, fallbackName: String = "", fallbackFace: String? = nil) {
         self.mid = mid
@@ -105,7 +105,7 @@ struct UserSpaceView: View {
         }
         .padding(16)
         .frame(maxWidth: .infinity)
-        .glassEffect(.regular, in: .rect(cornerRadius: 24))
+        .glassSurface(.regular, in: .rect(cornerRadius: 24))
     }
 
     private var backButton: some View {
@@ -122,7 +122,7 @@ struct UserSpaceView: View {
                     .font(.system(size: 22))
                     .foregroundStyle(Theme.ink)
                     .frame(width: 68, height: 68)
-                    .glassEffect(.regular.tint(Theme.purple.opacity(0.8)), in: .circle)
+                    .glassSurface(.regular.tint(Theme.purple.opacity(0.8)), in: .circle)
             }
         }
         .frame(width: 68, height: 68)
@@ -177,7 +177,7 @@ struct UserSpaceView: View {
                 .foregroundStyle(isFollowing == true ? Theme.inkDim : .white)
                 .padding(.horizontal, 14)
                 .frame(height: 30)
-                .glassEffect(
+                .glassSurface(
                     isFollowing == true
                         ? .regular.interactive()
                         : .regular.tint(Theme.pink).interactive(),
@@ -240,7 +240,7 @@ struct UserSpaceView: View {
                 Button("重试") {
                     Task { await store.refresh() }
                 }
-                .buttonStyle(.glass)
+                .buttonStyle(.liquidGlass)
                 .controlSize(.small)
             }
             .frame(maxWidth: .infinity)

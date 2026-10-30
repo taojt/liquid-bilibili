@@ -131,10 +131,8 @@ struct DynamicView: View {
                 Label("扫码登录", systemImage: "qrcode")
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(.white)
-                    .padding(.horizontal, 26)
-                    .padding(.vertical, 13)
             }
-            .buttonStyle(.glassProminent)
+            .buttonStyle(.liquidGlassProminent)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 90)
@@ -163,7 +161,7 @@ struct DynamicView: View {
             Button("重试") {
                 Task { await store.refresh() }
             }
-            .buttonStyle(.glassProminent)
+            .buttonStyle(.liquidGlassProminent)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 90)

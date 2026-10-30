@@ -20,7 +20,7 @@ struct SegmentTabs: View {
 
     var body: some View {
         ScrollView(.horizontal) {
-            GlassEffectContainer(spacing: 10) {
+            GlassFusion(spacing: 10) {
                 HStack(spacing: 4) {
                     ForEach(Array(titles.enumerated()), id: \.offset) { index, title in
                         button(index: index, title: title)
@@ -30,7 +30,7 @@ struct SegmentTabs: View {
                 // 玻璃必须直接作用在容器上，**不能**放进 `.background {}`：
                 // glassEffect 是独立合成的材质层，挂成背景时会盖在前景文字上，
                 // 选择项和未选择项的文字会一起被糊成一层灰影。
-                .glassEffect(.regular, in: .capsule)
+                .glassSurface(.regular, in: .capsule)
                 .liquidEdge(Capsule(style: .continuous), lineWidth: 0.9)
                 // 必须钉住固有宽度：横向 ScrollView 会把容器宽度提给内容，
                 // HStack 里若干 Text 吸收掉多余空间后，轨道底会被撑到屏幕右侧，
@@ -101,7 +101,7 @@ struct SegmentTabs: View {
                     }
                     .shadow(color: Theme.pink.opacity(0.30), radius: 8, y: 3)
             }
-            .glassEffectID("segment-active", in: segmentNamespace)
+            .glassFusionID("segment-active", in: segmentNamespace)
     }
 
     private func inactiveLabel(_ title: String) -> some View {

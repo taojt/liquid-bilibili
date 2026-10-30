@@ -149,7 +149,7 @@ struct LivePlayerView: View {
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 6)
-            .glassEffect(.regular, in: .capsule)
+            .glassSurface(.regular, in: .capsule)
 
             Spacer(minLength: 0)
 
@@ -200,7 +200,7 @@ struct LivePlayerView: View {
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 7)
-        .glassEffect(.regular, in: .capsule)
+        .glassSurface(.regular, in: .capsule)
     }
 
     private var footer: some View {
@@ -217,7 +217,7 @@ struct LivePlayerView: View {
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 8)
-        .glassEffect(.regular, in: .capsule)
+        .glassSurface(.regular, in: .capsule)
         .padding(.bottom, 18)
     }
 
@@ -231,7 +231,7 @@ struct LivePlayerView: View {
                 .foregroundStyle(Theme.inkDim)
         }
         .padding(22)
-        .glassEffect(.regular, in: .rect(cornerRadius: 20))
+        .glassSurface(.regular, in: .rect(cornerRadius: 20))
     }
 
     private func errorCard(_ message: String) -> some View {
@@ -244,11 +244,11 @@ struct LivePlayerView: View {
                 .foregroundStyle(Theme.ink)
                 .multilineTextAlignment(.center)
             Button("返回") { close() }
-                .buttonStyle(.glass)
+                .buttonStyle(.liquidGlass)
         }
         .padding(22)
         .frame(maxWidth: 300)
-        .glassEffect(.regular, in: .rect(cornerRadius: 22))
+        .glassSurface(.regular, in: .rect(cornerRadius: 22))
     }
 
     // MARK: - 控制条显隐

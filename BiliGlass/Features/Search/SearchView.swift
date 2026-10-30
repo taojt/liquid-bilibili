@@ -20,10 +20,10 @@ struct SearchView: View {
     @State private var hasMore = false
     @FocusState private var focused: Bool
 
-    private let columns = [
-        GridItem(.flexible(), spacing: 12),
-        GridItem(.flexible(), spacing: 12)
-    ]
+    @Environment(\.horizontalSizeClass) private var sizeClass
+
+    /// iPhone 2 列，iPad 4 列（见 Layout.coverColumns）
+    private var columns: [GridItem] { DeviceLayout.coverGrid(sizeClass) }
 
     var body: some View {
         ZStack {
@@ -85,7 +85,7 @@ struct SearchView: View {
             }
             .padding(.horizontal, 14)
             .padding(.vertical, 10)
-            .glassEffect(.regular, in: .capsule)
+            .glassSurface(.regular, in: .capsule)
 
             Button("取消") { dismiss() }
                 .font(.system(size: 14, weight: .medium))
@@ -128,7 +128,7 @@ struct SearchView: View {
                     .foregroundStyle(Theme.inkDim)
                     .multilineTextAlignment(.center)
                 Button("重试") { Task { await search(reset: true) } }
-                    .buttonStyle(.glassProminent)
+                    .buttonStyle(.liquidGlassProminent)
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 90)

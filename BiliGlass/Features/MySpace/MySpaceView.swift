@@ -59,10 +59,10 @@ struct MySpaceView: View {
     @State private var folderError: String?
     @State private var foldersLoaded = false
 
-    private let columns = [
-        GridItem(.flexible(), spacing: 12),
-        GridItem(.flexible(), spacing: 12)
-    ]
+    @Environment(\.horizontalSizeClass) private var sizeClass
+
+    /// iPhone 2 列，iPad 4 列（见 Layout.coverColumns）
+    private var columns: [GridItem] { DeviceLayout.coverGrid(sizeClass) }
 
     private var mid: Int {
         overrideMid ?? auth.userID ?? card?.card?.mid ?? 0
@@ -123,7 +123,7 @@ struct MySpaceView: View {
                         .foregroundStyle(Theme.inkDim)
                         .padding(.horizontal, 11)
                         .frame(height: 28)
-                        .glassEffect(.regular.interactive(), in: .capsule)
+                        .glassSurface(.regular.interactive(), in: .capsule)
                 }
                 .buttonStyle(.liquidPress)
             }
@@ -147,7 +147,7 @@ struct MySpaceView: View {
         }
         .padding(16)
         .frame(maxWidth: .infinity)
-        .glassEffect(.regular, in: .rect(cornerRadius: 20))
+        .glassSurface(.regular, in: .rect(cornerRadius: 20))
     }
 
     private var displayName: String {
@@ -168,7 +168,7 @@ struct MySpaceView: View {
                     .font(.system(size: 22))
                     .foregroundStyle(Theme.ink)
                     .frame(width: 68, height: 68)
-                    .glassEffect(.regular.tint(Theme.purple.opacity(0.8)), in: .circle)
+                    .glassSurface(.regular.tint(Theme.purple.opacity(0.8)), in: .circle)
             }
         }
         .frame(width: 68, height: 68)
@@ -254,7 +254,7 @@ struct MySpaceView: View {
         }
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .glassEffect(.regular, in: .rect(cornerRadius: 16))
+        .glassSurface(.regular, in: .rect(cornerRadius: 16))
     }
 
     private func attributeChip(_ title: String, value: String, icon: String) -> some View {
@@ -404,7 +404,7 @@ struct MySpaceView: View {
                 .multilineTextAlignment(.center)
             if let actionTitle, let action {
                 Button(actionTitle, action: action)
-                    .buttonStyle(.glass)
+                    .buttonStyle(.liquidGlass)
                     .controlSize(.small)
             }
         }
@@ -447,7 +447,7 @@ struct MySpaceView: View {
                 .font(.system(size: 13))
                 .foregroundStyle(Theme.pink)
                 .frame(width: 30, height: 30)
-                .glassEffect(.regular.tint(Theme.pink.opacity(0.26)), in: .circle)
+                .glassSurface(.regular.tint(Theme.pink.opacity(0.26)), in: .circle)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(folder.title)
@@ -467,7 +467,7 @@ struct MySpaceView: View {
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 11)
-        .glassEffect(.regular, in: .rect(cornerRadius: 14))
+        .glassSurface(.regular, in: .rect(cornerRadius: 14))
     }
 
     // MARK: - 数据

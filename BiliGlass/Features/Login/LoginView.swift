@@ -96,7 +96,7 @@ struct LoginView: View {
             Button("刷新") {
                 Task { await auth.startQRLogin() }
             }
-            .buttonStyle(.glassProminent)
+            .buttonStyle(.liquidGlassProminent)
         }
         .frame(width: 220, height: 220)
         .background(.black.opacity(0.68), in: .rect(cornerRadius: 18))
@@ -115,7 +115,7 @@ struct LoginView: View {
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 9)
-        .glassEffect(.regular, in: .capsule)
+        .glassSurface(.regular, in: .capsule)
     }
 
     private var statusColor: Color {
@@ -138,9 +138,8 @@ struct LoginView: View {
                     .font(.system(size: 14, weight: .medium))
                     .foregroundStyle(Theme.ink)
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 13)
             }
-            .buttonStyle(.glass)
+            .buttonStyle(.liquidGlass)
             .disabled(auth.isLoading)
 
             Text("凭证仅保存在本机钥匙串，不会上传到任何第三方服务器")
