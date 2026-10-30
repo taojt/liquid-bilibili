@@ -78,17 +78,42 @@ struct RootView: View {
         .onChange(of: selection) { _, new in
             mounted.insert(new)
         }
+        .onChange(of: ShortcutRouter.shared.pending) { _, action in
+            guard action != nil else { return }
+            focusShortcutTab()
+        }
         .onAppear {
             AuthService.shared.restore()
             if let tab = DebugEntry.tab {
                 selection = tab
                 mounted.insert(tab)
             }
+            if let shortcut = DebugEntry.shortcut {
+                ShortcutRouter.shared.inject(shortcut)
+            }
+            // 冷启动走快捷项时 pending 早就有值，onChange 不会触发
+            focusShortcutTab()
         }
         .task {
             // 设备指纹缺失时很多接口会被风控降级，启动补一次
             await BiliAPI.shared.ensureFingerprint()
         }
+    }
+
+    /// 快捷项一律落在首页 Tab。
+    ///
+    /// 只有「热门」会清空首页的导航栈——它要的是首页本身，栈里压着详情页时
+    /// 切过去根本看不见。搜索不清：用户可能就站在详情页上，把搜索页 push 在
+    /// 它上面是可接受的（还能左滑回来）；反过来如果在搜索页里再点一次，
+    /// 清栈会把 `navigationDestination(isPresented:)` 的绑定打成 false，
+    /// 和 HomeView 那边刚设上的 true 抢顺序，最后什么都不发生。
+    private func focusShortcutTab() {
+        guard let action = ShortcutRouter.shared.pending else { return }
+        if action == .hot {
+            homePath = NavigationPath()
+        }
+        selection = 0
+        mounted.insert(0)
     }
 
     /// 单个 Tab 的容器。

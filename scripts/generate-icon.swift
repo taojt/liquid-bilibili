@@ -16,6 +16,10 @@
 //
 // 用法：xcrun swift scripts/generate-icon.swift BiliGlass/Resources/Assets.xcassets/AppIcon.appiconset
 //
+// ⚠️ 常规与深色两套现在改用设计稿（白底 / 近黑底两版玻璃电视），跑本脚本会把它们覆盖掉。
+// 换过设计稿后一般只需要它来出 tinted：那套要求「透明底 + 白色图形」，
+// 彩色设计稿套 tint 会糊掉，没法复用。跑之前先备份 AppIcon-1024.png / AppIcon-1024-dark.png。
+//
 
 import Foundation
 import CoreGraphics

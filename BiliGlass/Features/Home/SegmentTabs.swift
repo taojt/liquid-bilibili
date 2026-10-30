@@ -57,6 +57,9 @@ struct SegmentTabs: View {
             }
         }
         .buttonStyle(.chipPress)
+        // 选中态交给无障碍层：VoiceOver 会念「已选中」，UI 测试也能靠 isSelected 断言，
+        // 否则只能去比背景色
+        .accessibilityAddTraits(active ? .isSelected : [])
     }
 
     /// 选中态：高饱和粉紫渐变实底 + 白字。

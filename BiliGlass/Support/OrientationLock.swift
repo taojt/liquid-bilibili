@@ -81,13 +81,3 @@ enum OrientationLock {
         }
     }
 }
-
-/// 只有这个 AppDelegate 存在的意义就是把方向锁暴露给 UIKit
-final class AppDelegate: NSObject, UIApplicationDelegate {
-    func application(
-        _ application: UIApplication,
-        supportedInterfaceOrientationsFor window: UIWindow?
-    ) -> UIInterfaceOrientationMask {
-        OrientationLock.mask
-    }
-}

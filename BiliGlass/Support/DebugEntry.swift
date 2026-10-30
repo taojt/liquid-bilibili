@@ -113,6 +113,12 @@ enum DebugEntry {
         UserDefaults.standard.bool(forKey: "debugPressPreview")
     }
 
+    /// 模拟主屏快捷项（search / hot），跳过 SpringBoard 直接验证落地路由
+    static var shortcut: ShortcutAction? {
+        guard let value = UserDefaults.standard.string(forKey: "debugShortcut") else { return nil }
+        return ShortcutAction(rawValue: value)
+    }
+
     /// 首页启动后直接推进搜索页
     static var search: Bool {
         UserDefaults.standard.bool(forKey: "debugSearch")
@@ -157,7 +163,7 @@ enum DebugEntry {
             "debugDanmakuArea", "debugDanmakuOpacity", "debugDanmakuInfo",
             "debugComment", "debugTripleBurst", "debugKeyword", "debugRate",
             "debugCommentComposer", "debugCollapsed", "debugScroll", "debugPip",
-            "debugDiag", "debugPressPreview"
+            "debugDiag", "debugPressPreview", "debugShortcut"
         ] {
             defaults.removeObject(forKey: key)
         }

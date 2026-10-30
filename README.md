@@ -2,7 +2,7 @@
 
 一个支持 iOS 27 液态玻璃（Liquid Glass）的第三方哔哩哔哩 iOS 客户端，基于 SwiftUI + Xcode 27 / iOS 27 SDK。
 
-当前功能：首页四流（推荐/关注/热门/直播，**上滑自动折叠顶栏 + 悬浮玻璃底栏**）、搜索、**关注动态时间线**、观看历史（**支持断点续播**）、收藏夹、视频详情页与全屏播放、弹幕浮动层（**支持不透明度与显示区域设置**）、倍速播放、**点赞/投币/收藏**（**长按点赞一键三连**）、**视频评论区（回复 / 点赞 / 进发言人主页）**、**UP 主个人主页与投稿列表**、**我的主页（资料 / 账号属性 / 历史 / 收藏 / 点赞）**、**直播间实时弹幕与全屏**、扫码登录与会话持久化。App 图标提供常规 / 深色 / 着色三套变体，界面支持**跟随系统 / 白天 / 夜间**三种外观。
+当前功能：首页四流（推荐/关注/热门/直播，**上滑自动折叠顶栏 + 悬浮玻璃底栏**）、搜索、**关注动态时间线**、观看历史（**支持断点续播**）、收藏夹、视频详情页与全屏播放、弹幕浮动层（**支持不透明度与显示区域设置**）、倍速播放、**点赞/投币/收藏**（**长按点赞一键三连**）、**视频评论区（回复 / 点赞 / 进发言人主页）**、**UP 主个人主页与投稿列表**、**我的主页（资料 / 账号属性 / 历史 / 收藏 / 点赞）**、**直播间实时弹幕与全屏**、扫码登录与会话持久化。App 图标提供常规 / 深色 / 着色三套变体，界面支持**跟随系统 / 白天 / 夜间**三种外观，主屏图标**长按/重按**可直达搜索与热门。
 
 ## 功能总览
 
@@ -19,6 +19,7 @@
 | 账号 | 扫码登录，Cookie 会话持久化，冷启动自动恢复登录态 |
 | 手势 | 所有被推入的页面支持**左滑返回**（导航栏隐藏后系统手势被禁用，已修复） |
 | 外观 | 近黑画布 + 品牌色极光底、封面即卡片的大圆角视觉（参考 Apple TV）；液态玻璃（iOS 26+ `glassEffect` + 自绘光学边缘）；**全局点按外围浮出椭圆液态玻璃**（跟随控件形状）；跟随系统 / 白天 / 夜间三种模式，明暗双套 App 图标 |
+| 快捷入口 | 主屏图标**重按（3D Touch）/ 长按（Haptic Touch）**弹出快捷菜单：**搜索**、**热门视频**两条直达，冷启动与后台唤起都能落地 |
 
 ## 示意图
 
@@ -129,6 +130,7 @@ xcrun simctl spawn $UDID defaults write $APP debugScroll -bool YES            # 
 xcrun simctl spawn $UDID defaults write $APP debugPip -bool YES               # 起播后自动进画中画小窗
 xcrun simctl spawn $UDID defaults write $APP debugDiag -bool YES              # 播放区显示画中画/全屏诊断 HUD
 xcrun simctl spawn $UDID defaults write $APP debugPressPreview -bool YES     # 所有按钮常显按下态（核对点按椭圆尺寸）
+xcrun simctl spawn $UDID defaults write $APP debugShortcut -string hot      # 模拟主屏快捷项 search / hot
 xcrun simctl launch $UDID $APP
 ```
 
@@ -168,23 +170,34 @@ xcodebuild -project BiliGlass.xcodeproj -scheme BiliGlass \
 | `testSwipeBackFromUserSpace` | UP 主主页同样能滑回上一层 |
 | `testSwipeBackTwiceAfterPushResetsDelegate` | push 之后 SwiftUI 会重设 delegate，补装是否仍然有效 |
 | `testTabBarStillTappableAfterPressStyleSwap` | 全局换成自定义 ButtonStyle 后底栏仍点得动、App 没崩 |
+| `testQuickActionMenuShowsBothEntries` | 长按主屏图标弹出的菜单里有「搜索」「热门视频」两项 |
+| `testQuickActionHotLandsOnPopularTab` | 冷启动点「热门视频」，落地后停在热门二级 Tab |
+| `testQuickActionHotWhileInBackground` | App 在后台时点快捷项同样能落地（走的是另一条系统通路） |
+| `testQuickActionSearchOpensSearchPage` | 冷启动点「搜索」，落地后打开搜索页 |
+| `testDebugShortcutRouting` | 不经过 SpringBoard，只验证 App 侧路由 |
 
 边缘返回有个坑：起点必须压在屏幕最左侧（系统识别区约 20pt 宽），并且结尾要有停顿，否则会被判成普通轻扫。用例里用 `press(forDuration:thenDragTo:withVelocity:thenHoldForDuration:)` 而不是 `swipeRight()`，后者从屏幕中间起手，永远触发不了边缘手势。
 
-页面标识（`detailBack` / `userSpaceBack`）是 `accessibilityIdentifier`，顺带也改善了无障碍。
+快捷项那几条要跨进程操作：开一个 `XCUIApplication(bundleIdentifier: "com.apple.springboard")` 去长按图标。
+两个坑：新装的 App 排在主屏后面几页，得先按两次 Home 回第一页再逐页翻找，
+而且 `springboard.icons["bilibili"]` 在别的页上也会命中（只是 frame 为 0），必须连 frame 一起判断；
+菜单项的元素类型在不同系统版本上不一样（buttons / cells / staticTexts 都见过），要逐个试。
+
+页面标识（`detailBack` / `userSpaceBack`）是 `accessibilityIdentifier`，顺带也改善了无障碍；
+二级 Tab 的选中态用 `.accessibilityAddTraits(.isSelected)` 暴露，测试才不用去比背景色。
 
 ### App 图标
 
-三套变体由 `scripts/generate-icon.swift` 用 CoreGraphics 矢量绘制，不依赖设计稿也不走 AI 生图——  
-图标是纯几何图形，矢量绘制在任何尺寸都锐利，且三套变体共用同一份几何描述，风格必然一致：
+三套变体。**常规与深色来自设计稿**（1024×1024 PNG，无 alpha 通道）；着色（tinted）仍由
+`scripts/generate-icon.swift` 矢量生成——tinted 要求「透明底 + 白色图形」让系统按亮度套 tint，
+彩色设计稿套上去会糊成一团，只能单独画。
 
-```bash
-xcrun swift scripts/generate-icon.swift BiliGlass/Resources/Assets.xcassets/AppIcon.appiconset
-```
+| 常规 | 深色 | 着色 |
+| --- | --- | --- |
+| 白底 + 蓝紫玻璃电视 + 粉色播放键 + 环绕光环 | 同款图形，近黑底加霓虹发光描边 | 透明底 + 白色图形，系统按亮度套 tint |
 
-| 常规               | 深色         | 着色                     |
-| ---------------- | ---------- | ---------------------- |
-| 粉→紫→蓝渐变 + 白色玻璃三角 | 近黑底 + 粉色辉光 | 透明底 + 白色图形，系统按亮度套 tint |
+> ⚠️ 重跑 `generate-icon.swift` 会覆盖常规与深色两张图。换过设计稿之后一般只需要它来出 tinted，
+> 跑之前先备份 `AppIcon-1024.png` / `AppIcon-1024-dark.png`。
 
 ## 技术要点
 
@@ -502,6 +515,39 @@ GET .../live_xxx-1793013747.ts   无 Referer → 200
 
 这段没法靠肉眼回归，用 XCUITest 的坐标拖拽固定下来（见「自动化验证」）。
 
+### 主屏快捷入口（3D Touch / 长按）
+
+iPhone XS 及以前是重按图标的 3D Touch，之后硬件取消、改成长按触发的 Haptic Touch——
+**系统层面是同一套 Home Screen Quick Actions**，都从 `UIApplicationShortcutItem` 进来，
+所以一份实现同时覆盖两种交互。
+
+条目在 `project.yml` 的 `UIApplicationShortcutItems` 里静态声明。静态项的好处是进程没起来时
+SpringBoard 也能画出来，代价是顺序固定（按数组顺序展示）。`type` 用 bundle id 前缀，
+解析时只认最后一段，将来改 bundle id 不至于把快捷项全废掉。
+
+**关键结论：SwiftUI 的 App 生命周期收不到快捷项。** 一开始按常规写法用
+`@UIApplicationDelegateAdaptor` + `application(_:performActionFor:)`，实测冷启动、热启动都不触发；
+补上 `configurationForConnecting` 读 `options.shortcutItem` 也恒为 nil。用 UserDefaults 落盘打点确认过：
+冷启动时只有 `didFinishLaunching` 能进（且 item 为 nil），热启动时连 `performActionFor` 都不会被调用——
+item 被 SwiftUI 自己的 scene delegate 吃掉了，而它没有公开 API 转发出来。
+
+所以入口改成了 UIKit：
+
+- `AppDelegate`（`@main`）负责 `configurationForConnecting`，返回带 `delegateClass = SceneDelegate.self` 的配置
+- `SceneDelegate` 自己建 `UIWindow`，用 `UIHostingController(rootView: RootView())` 托住界面
+- 冷启动的 item 从 `scene(_:willConnectTo:options:)` 的 `connectionOptions.shortcutItem` 取，
+  运行时（前台/后台）的从 `windowScene(_:performActionFor:)` 取
+
+SwiftUI 只负责界面，生命周期归 UIKit。改造后 UI 表现与之前一致——`preferredColorScheme`、`tint`
+这些都写在 `RootView` 内部，托管方式不影响。
+
+落地分两层：`RootView` 负责切到首页 Tab（「热门」还要清空导航栈，否则栈里压着详情页时切过去看不见），
+`HomeView` 负责真正执行（推搜索页 / 切到热门段）并立刻 `consume()`，
+否则下次切 Tab 重建视图会重放一次。
+
+主屏长按没法用脚本跨进程触发菜单，所以另留了 `-debugShortcut search|hot` 只验路由；
+真实链路则靠 XCUITest 去戳 SpringBoard（见「自动化验证」）。
+
 ### 画中画小窗
 
 自绘播放器没走 `AVPlayerViewController`，小窗要自己搭：`AVPictureInPictureController` + `ContentSource(playerLayer:)` 挂在当前显示的 `AVPlayerLayer` 上。内嵌播放器和全屏播放器共用同一个 `AVPlayer` 但各有一个 layer，`PlayerLayerView` 每次创建/更新都重新 `attach`，保证小窗内容源始终指向正在显示的那块 layer。
@@ -545,13 +591,13 @@ iOS 27 SDK 的两个坑：`ContentSource(playerLayer:playbackDelegate:)` 和 `AV
 
 ```
 BiliGlass/
-├── App/          入口与根视图（自绘四项悬浮底栏 + 外观覆盖）
+├── App/          入口（AppDelegate / SceneDelegate）+ 根视图 + 自绘四项悬浮底栏
 ├── Design/       视觉令牌（语义色）与玻璃组件
 ├── Models/       接口 DTO、弹幕轨道调度、直播弹幕模型、画质映射
 ├── Network/      HTTP 客户端、WBI 签名、Cookie 管理
 ├── Services/     接口门面、登录态、播放内核、弹幕解析、直播弹幕 WS 客户端、
 │                 zlib 解压、资源加载器（点播逐块 / 直播 m3u8 改写）、外观设置
-├── Support/      屏幕方向锁、调试入口
+├── Support/      屏幕方向锁、主屏快捷项路由、左滑返回补丁、调试入口
 ├── Resources/    Assets.xcassets（三套 App 图标 + 明暗双色 colorset）
 └── Features/
     ├── Home/     首页四流 + 二级 Tab
@@ -567,5 +613,5 @@ BiliGlass/
     ├── Login/    扫码登录
     ├── Player/   AVPlayerLayer 封装 + 弹幕渲染层
     └── Profile/  个人中心（含外观切换）
-BiliGlassUITests/ XCUITest 回归用例（左滑返回 / 底栏可点）
+BiliGlassUITests/ XCUITest 回归用例（左滑返回 / 主屏快捷项 / 底栏可点）
 ```

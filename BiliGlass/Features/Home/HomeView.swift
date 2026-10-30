@@ -15,7 +15,7 @@ struct HomeView: View {
     @State private var showLogin = false
     @State private var debugTarget: BVIDTarget?
     @State private var mySpaceTarget: MIDTarget?
-    @State private var debugSearchPresented = false
+    @State private var searchPresented = false
 
     @State private var recommend = VideoFeedStore(source: .recommend)
     @State private var following = VideoFeedStore(source: .following)
@@ -90,8 +90,11 @@ struct HomeView: View {
         .navigationDestination(item: $mySpaceTarget) { target in
             MySpaceView(mid: target.id)
         }
-        .navigationDestination(isPresented: $debugSearchPresented) {
+        .navigationDestination(isPresented: $searchPresented) {
             SearchView()
+        }
+        .onChange(of: ShortcutRouter.shared.pending) { _, action in
+            applyShortcut(action)
         }
         .task {
             if DebugEntry.collapsed {
@@ -104,11 +107,13 @@ struct HomeView: View {
                 debugTarget = BVIDTarget(id: bvid)
             }
             if DebugEntry.search {
-                debugSearchPresented = true
+                searchPresented = true
             }
             if let mid = DebugEntry.mySpaceMid {
                 mySpaceTarget = MIDTarget(id: mid)
             }
+            // 冷启动走快捷项时 pending 在 RootView 建好之前就有值了
+            applyShortcut(ShortcutRouter.shared.pending)
         }
         .sheet(isPresented: $showLogin) {
             LoginView()
@@ -116,6 +121,19 @@ struct HomeView: View {
     }
 
     // MARK: - 顶栏
+
+    /// 主屏快捷项落地：搜索 → 推搜索页；热门 → 切到「热门」二级 Tab（下标 2）。
+    /// 落地后立刻 consume，否则下次切 Tab 重建视图会重放一次。
+    private func applyShortcut(_ action: ShortcutAction?) {
+        guard let action else { return }
+        switch action {
+        case .search:
+            searchPresented = true
+        case .hot:
+            withAnimation(.snappy(duration: 0.26)) { selection = 2 }
+        }
+        ShortcutRouter.shared.consume()
+    }
 
     /// 两行结构：上行是完整搜索框 + 头像，下行是二级 Tab。
     /// 上滑后上行整体收起，搜索入口缩成一枚小圆图标，挪到二级 Tab 右侧，

@@ -55,6 +55,16 @@ targets:
           - UIInterfaceOrientationLandscapeLeft
           - UIInterfaceOrientationLandscapeRight
         NSPhotoLibraryAddUsageDescription: 用于保存图片
+        # 主屏图标快捷菜单（3D Touch 重按 / Haptic Touch 长按）。
+        # 静态声明的好处是进程没起来时 SpringBoard 也能画出来；顺序固定，按数组来。
+        # type 前缀与 ShortcutAction.typePrefix 保持一致，最后一段是动作名。
+        UIApplicationShortcutItems:
+          - UIApplicationShortcutItemType: com.biliglass.app.shortcut.search
+            UIApplicationShortcutItemTitle: 搜索
+            UIApplicationShortcutItemIconType: UIApplicationShortcutIconTypeSearch
+          - UIApplicationShortcutItemType: com.biliglass.app.shortcut.hot
+            UIApplicationShortcutItemTitle: 热门视频
+            UIApplicationShortcutItemIconType: UIApplicationShortcutIconTypePlay
         # 画中画必需：audio 让退后台后音频继续（否则小窗会立刻被系统收掉），
         # picture-in-picture 声明本 App 使用系统小窗能力。
         UIBackgroundModes:
