@@ -35,6 +35,18 @@ final class PlaybackEngine {
     let availableRates: [Float] = [0.5, 0.75, 1.0, 1.25, 1.5, 2.0]
     var playbackRate: Float = 1.0
 
+    /// 最近一次「临时倍速」（长按加速）留下的值，仅供诊断 HUD 和自动化断言使用
+    var lastTemporaryRate: Float?
+
+    /// 长按加速被真正触发的次数。只增不减，因此松手回落后依然能读到，
+    /// 适合给「按住才生效」的自动化用例做断言
+    var boostCount = 0
+
+    /// 诊断用：最近一次竖滑手势后**读回**的亮度/音量实际值。
+    /// 记读回值而不是目标值，才能证明写入真的生效了（拿不到音量滑杆时写入是空转的）
+    var lastBrightness: Double?
+    var lastVolume: Double?
+
     private var detail: VideoDetail?
     private var timeObserver: Any?
     private var statusObservation: NSKeyValueObservation?
@@ -293,6 +305,22 @@ final class PlaybackEngine {
         player.defaultRate = rate
         if isPlaying {
             player.rate = rate
+        }
+    }
+
+    /// 只改「当下这一刻」的播放速率，不碰 `playbackRate`。
+    ///
+    /// 给长按加速用：按住时按 2× 跑，松手要回到用户自己选的倍速。
+    /// 走 `setRate` 的话会把用户的倍速选择改成 2× 并留在 UI 上。
+    func applyTemporaryRate(_ rate: Float) {
+        guard let player, isPlaying else { return }
+        player.rate = rate
+        // 只在诊断 HUD 里露出来：长按这类「按住才生效」的行为没有任何静态痕迹，
+        // 不记一笔就没法在真机/自动化里确认它到底跑没跑过。
+        // 「最近一次临时倍速」记的是加速值，恢复调用（传回用户倍速）不覆盖它，
+        // 否则松手后这一格永远是 1，看着像没生效
+        if rate > 1 {
+            lastTemporaryRate = rate
         }
     }
 

@@ -119,6 +119,18 @@ enum DebugEntry {
         return ShortcutAction(rawValue: value)
     }
 
+    /// 常显手势反馈气泡：brightness / volume / speed。
+    /// 真机没法脚本化「按住不放」，靠它核对气泡的尺寸与排版。
+    static var hud: PlayerHUDKind? {
+        guard let value = UserDefaults.standard.string(forKey: "debugHUD") else { return nil }
+        switch value {
+        case "brightness": return .brightness
+        case "volume": return .volume
+        case "speed": return .speed(2.0)
+        default: return nil
+        }
+    }
+
     /// 首页启动后直接推进搜索页
     static var search: Bool {
         UserDefaults.standard.bool(forKey: "debugSearch")
@@ -153,6 +165,30 @@ enum DebugEntry {
         return nil
     }
 
+    /// 手势事件落盘。
+    ///
+    /// 「按住才生效」的手势在 XCUITest 里没法直接断言：`press` 阻塞到松手，
+    /// 松手时状态已经回滚。屏幕上的诊断 HUD 又会因为长按落点选择而不好对照，
+    /// 所以把每次回调按顺序写进 UserDefaults，测完读 plist 就能还原完整时序。
+    enum GestureLog {
+        private static let key = "gestureLog"
+        private static let limit = 60
+
+        static func add(_ event: String) {
+            guard DebugEntry.diag else { return }
+            let defaults = UserDefaults.standard
+            var items = defaults.stringArray(forKey: key) ?? []
+            items.append(event)
+            if items.count > limit { items.removeFirst(items.count - limit) }
+            defaults.set(items, forKey: key)
+            defaults.synchronize()
+        }
+
+        static func reset() {
+            UserDefaults.standard.removeObject(forKey: key)
+        }
+    }
+
     /// 清空，避免每次启动都被带到调试页
     static func clear() {
         let defaults = UserDefaults.standard
@@ -163,7 +199,7 @@ enum DebugEntry {
             "debugDanmakuArea", "debugDanmakuOpacity", "debugDanmakuInfo",
             "debugComment", "debugTripleBurst", "debugKeyword", "debugRate",
             "debugCommentComposer", "debugCollapsed", "debugScroll", "debugPip",
-            "debugDiag", "debugPressPreview", "debugShortcut"
+            "debugDiag", "debugPressPreview", "debugShortcut", "debugHUD"
         ] {
             defaults.removeObject(forKey: key)
         }

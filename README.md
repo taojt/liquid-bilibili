@@ -10,14 +10,14 @@
 | --- | --- |
 | 首页 | 推荐 / 关注 / 热门 / 直播四流，左右滑动切换；上滑自动折叠顶栏，搜索框缩成图标；悬浮玻璃底栏，内容从底下穿过 |
 | 搜索 | 热搜词 + 综合搜索，WBI 签名；结果双列瀑布流，点击进详情 |
-| 视频播放 | AVPlayer 硬解（VideoToolbox），断点续播（服务端历史 + 本地记录双保险），倍速播放（0.5x ~ 2.0x），**画中画小窗（手动按钮 / 退后台自动进入）** |
+| 视频播放 | AVPlayer 硬解（VideoToolbox），断点续播（服务端历史 + 本地记录双保险），倍速播放（0.5x ~ 2.0x），**画中画小窗（手动按钮 / 退后台自动进入）**；**±10 秒快进回退 + 胶囊玻璃播放条**，**长按播放区 2× 加速**（松手回到原倍速） |
 | 弹幕 | 滚动 / 顶部 / 底部弹幕，轨道防重叠调度；不透明度与显示区域（全屏 / 上半区 / 下半区）设置；直播实时弹幕（WebSocket） |
 | 互动 | 点赞 / 投币 / 收藏；**长按点赞一键三连**（带扇形散开动效与触觉反馈） |
 | 评论区 | 一级评论 + 楼中楼懒加载、点赞、回复、排序切换，可从发言人进入其主页 |
 | 社区 | 关注 UP 主动态时间线（图文 + 转发）、UP 主个人主页与投稿列表、我的主页（资料 / 账号属性 / 历史 / 收藏 / 点赞 / 收藏夹管理） |
 | 直播 | 直播间列表、拉流播放、实时弹幕、手动 / 转屏全屏 |
 | 账号 | 扫码登录，Cookie 会话持久化，冷启动自动恢复登录态 |
-| 手势 | 所有被推入的页面支持**左滑返回**（导航栏隐藏后系统手势被禁用，已修复） |
+| 手势 | 所有被推入的页面支持**左滑返回**（导航栏隐藏后系统手势被禁用，已修复）；播放区**长按加速**，全屏时**左半屏竖滑调亮度 / 右半屏竖滑调音量** |
 | 外观 | 近黑画布 + 品牌色极光底、封面即卡片的大圆角视觉（参考 Apple TV）；液态玻璃（iOS 26+ `glassEffect` + 自绘光学边缘）；**全局点按外围浮出椭圆液态玻璃**（跟随控件形状）；跟随系统 / 白天 / 夜间三种模式，明暗双套 App 图标 |
 | 快捷入口 | 主屏图标**重按（3D Touch）/ 长按（Haptic Touch）**弹出快捷菜单：**搜索**、**热门视频**两条直达，冷启动与后台唤起都能落地 |
 
@@ -32,6 +32,12 @@
 | 播放器 + 弹幕 | 搜索 | 动态时间线 | UP 主主页 |
 | --- | --- | --- | --- |
 | <img src="docs/screen-player.png" width="230"/> | <img src="docs/screen-search.png" width="230"/> | <img src="docs/screen-dynamic.png" width="230"/> | <img src="docs/screen-userspace.png" width="230"/> |
+
+**播放器控件与手势**（竖屏 / 全屏的胶囊播放条与中央 ±10 秒；手势气泡用 `-debugHUD` 常显，真实场景松手即消失）
+
+| 竖屏播放器 | 全屏播放器 | 亮度气泡 | 长按加速气泡 |
+| --- | --- | --- | --- |
+| <img src="docs/screen-player-skip.png" width="230"/> | <img src="docs/screen-player-fullscreen.png" width="330"/> | <img src="docs/screen-hud-brightness.png" width="330"/> | <img src="docs/screen-hud-speed.png" width="330"/> |
 
 **直播**
 
@@ -131,6 +137,7 @@ xcrun simctl spawn $UDID defaults write $APP debugPip -bool YES               # 
 xcrun simctl spawn $UDID defaults write $APP debugDiag -bool YES              # 播放区显示画中画/全屏诊断 HUD
 xcrun simctl spawn $UDID defaults write $APP debugPressPreview -bool YES     # 所有按钮常显按下态（核对点按椭圆尺寸）
 xcrun simctl spawn $UDID defaults write $APP debugShortcut -string hot      # 模拟主屏快捷项 search / hot
+xcrun simctl spawn $UDID defaults write $APP debugHUD -string volume       # 常显手势气泡 brightness / volume / speed
 xcrun simctl launch $UDID $APP
 ```
 
@@ -175,6 +182,9 @@ xcodebuild -project BiliGlass.xcodeproj -scheme BiliGlass \
 | `testQuickActionHotWhileInBackground` | App 在后台时点快捷项同样能落地（走的是另一条系统通路） |
 | `testQuickActionSearchOpensSearchPage` | 冷启动点「搜索」，落地后打开搜索页 |
 | `testDebugShortcutRouting` | 不经过 SpringBoard，只验证 App 侧路由 |
+| `testLongPressAppliesTemporaryRate` | 长按播放区真的触发了临时 2× 加速 |
+| `testFullscreenLeftDragAdjustsBrightness` | 全屏左半屏下滑把屏幕亮度调小了 |
+| `testFullscreenRightDragAdjustsVolume` | 全屏右半屏上滑把音量调大了 |
 
 边缘返回有个坑：起点必须压在屏幕最左侧（系统识别区约 20pt 宽），并且结尾要有停顿，否则会被判成普通轻扫。用例里用 `press(forDuration:thenDragTo:withVelocity:thenHoldForDuration:)` 而不是 `swipeRight()`，后者从屏幕中间起手，永远触发不了边缘手势。
 
@@ -464,6 +474,22 @@ GET .../live_xxx-1793013747.ts   无 Referer → 200
 
 实测校验：2 倍速下 5 秒墙钟推进 11 秒播放时间。
 
+### 播放条与播放手势
+
+播放条是一个胶囊形玻璃容器，里面顺序摆 `当前时间 → 细进度轨 → 剩余时间`。三段时间都用等宽字体定宽（竖屏 38pt / 全屏 46pt），否则秒数跳动时整根轨道会左右抖。进度轨自己实现了 `DragGesture(minimumDistance: 0)`，按下即可定位，不依赖系统 `Slider`——系统滑杆的拇指和外圈样式在液态玻璃底上无法收敛。
+
+中央控制簇（回退 10 秒 / 播放暂停 / 快进 10 秒）用了和页面其它按钮同一套 `iconPress` + `glassEffect` 样式；全屏时它**不放进顶栏+底栏那个 `VStack`**，因为会被上下留白挤压而落不到真实中心，得单独摆在 `ZStack` 里。
+
+长按加速不能直接用 `onLongPressGesture` 的 `perform`：那里只在识别成功那一刻回调一次，拿不到「松手」事件，加速就永远撤不掉。改用 `pressing:` 回调自己起一个 0.4 秒计时器，按住超时加速、松手取消并恢复，逻辑才闭合。
+
+三个坑：
+
+1. 竖滑手势必须用 `.simultaneousGesture`。写成 `.gesture(verticalDrag)` 时它是后加者、优先级更高，而 `DragGesture` 在手指静止时会一直停在「可能识别」而**不失败**，长按就被彻底饿死了——症状是长按毫无反应，且完全没有报错。
+2. 亮度没有 App 级 API，只能写 `UIScreen.main.brightness`（改的是系统亮度，退出 App 后保持）；音量靠一个挂在窗口上、挪到屏幕外的 `MPVolumeView`，必须真的进视图层级，`subviews` 里才拿得到内部 `UISlider`。
+3. 全屏才有竖滑（竖屏内嵌时滑动要留给页面滚动），半屏界线取 `startLocation.x` 与屏幕中线比较，全程锁定起手那一侧，中途划到对面也不会换边。
+
+诊断 HUD 里的 `boost=` / `dim=` / `vol=` 是给自动化用的：长按和竖滑都是「松手即回滚」，屏幕上抓不到任何痕迹，所以记成只增不减的计数和**写入后读回的实际值**（读回才能证明写真的生效，拿不到音量滑杆时写入是空转的）。
+
 ### 弹幕
 
 弹幕文件从 `comment.bilibili.com/{cid}.xml` 取，响应头是 `Content-Encoding: deflate`，URLSession 会自动解压成明文 XML，不需要自己 inflate。单条格式 `p="时间,模式,字号,颜色,..."`。
@@ -596,7 +622,8 @@ BiliGlass/
 ├── Models/       接口 DTO、弹幕轨道调度、直播弹幕模型、画质映射
 ├── Network/      HTTP 客户端、WBI 签名、Cookie 管理
 ├── Services/     接口门面、登录态、播放内核、弹幕解析、直播弹幕 WS 客户端、
-│                 zlib 解压、资源加载器（点播逐块 / 直播 m3u8 改写）、外观设置
+│                 zlib 解压、资源加载器（点播逐块 / 直播 m3u8 改写）、外观设置、
+│                 系统亮度/音量控制
 ├── Support/      屏幕方向锁、主屏快捷项路由、左滑返回补丁、调试入口
 ├── Resources/    Assets.xcassets（三套 App 图标 + 明暗双色 colorset）
 └── Features/
@@ -611,7 +638,8 @@ BiliGlass/
     ├── History/  观看历史（断点续播）
     ├── Favorites/ 收藏夹
     ├── Login/    扫码登录
-    ├── Player/   AVPlayerLayer 封装 + 弹幕渲染层
+    ├── Player/   AVPlayerLayer 封装 + 弹幕渲染层 + 播放控件（播放条/中央簇/手势气泡）
+│                 + 播放手势修饰器（长按加速 / 竖滑调亮度音量）
     └── Profile/  个人中心（含外观切换）
-BiliGlassUITests/ XCUITest 回归用例（左滑返回 / 主屏快捷项 / 底栏可点）
+BiliGlassUITests/ XCUITest 回归用例（左滑返回 / 主屏快捷项 / 底栏可点 / 播放器手势）
 ```

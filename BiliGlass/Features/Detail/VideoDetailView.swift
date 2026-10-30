@@ -43,8 +43,9 @@ struct VideoDetailView: View {
     /// 转屏过程中补发的同方向通知把全屏状态打回去
     @State private var lastSyncedOrientation: UIDeviceOrientation = .unknown
     @State private var controlsVisible = true
-    @State private var scrubbing = false
-    @State private var scrubValue: Double = 0
+    /// 手势反馈气泡：亮度 / 音量 / 倍速。为 nil 时不显示
+    @State private var hud: PlayerHUDKind?
+    @State private var hudValue: Double = 0
     @State private var descExpanded = false
 
     var body: some View {
@@ -65,7 +66,14 @@ struct VideoDetailView: View {
         // 登记进悬浮底栏闸门：详情页（含全屏播放期间）整段生命周期内底栏收起
         .hidesFloatingTabBar()
         .statusBarHidden(isFullscreen)
-        .task { await load() }
+        .task {
+            // 调试：手势气泡没法靠脚本按住不放，直接钉一个在屏幕上核对排版
+            if let kind = DebugEntry.hud {
+                hud = kind
+                hudValue = 0.62
+            }
+            await load()
+        }
         .onChange(of: engine.isReady) { _, ready in
             guard ready else { return }
             // 调试：模拟器没法按 Home 键也没法点按钮，自动走一次对应动作截图验证
@@ -159,30 +167,53 @@ struct VideoDetailView: View {
             }
             .overlay { danmakuLayer }
             .overlay { statusOverlay }
-            .overlay(alignment: .center) { centerPlayButton }
+            .overlay(alignment: .center) { centerControls }
+            .overlay { hudLayer }
             .overlay(alignment: .bottom) { inlineBottomBar }
             .overlay(alignment: .topLeading) { backButton }
             .overlay(alignment: .topTrailing) { inlineControlCluster }
             .overlay(alignment: .topLeading) { diagHud }
             .clipped()
+            // 竖屏只接长按加速；亮度/音量竖滑留给全屏，否则会和页面滚动打架
+            .playerGestures(engine: engine, systemGestures: false, hud: $hud, hudValue: $hudValue)
     }
 
-    /// 只能在真机上靠截图排查时开（`debugDiag`）：把画中画三态和全屏态打在画面上
+    /// 手势反馈气泡（亮度 / 音量 / 倍速）
     @ViewBuilder
+    private var hudLayer: some View {
+        if let hud {
+            PlayerHUDBubble(kind: hud, value: hudValue)
+                .transition(.opacity.combined(with: .scale(scale: 0.92)))
+                .allowsHitTesting(false)
+        }
+    }
+
+    /// 只能在真机上靠截图排查时开（`debugDiag`）：把画中画三态、全屏态、引擎态打在画面上。
+    /// 竖屏和全屏共用一份，否则全屏下读不到手势落值，自动化没法验证竖滑
+    private func diagPanel(topPadding: CGFloat) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(pip.debugText)
+            Text("fs=\(isFullscreen) ready=\(engine.isReady) play=\(engine.isPlaying)")
+            Text("dev=\(String(describing: UIDevice.current.orientation.rawValue))")
+            Text("tmpRate=\(engine.lastTemporaryRate.map { String(format: "%g", $0) } ?? "nil")")
+            Text("boost=\(engine.boostCount)")
+            Text("dim=\(engine.lastBrightness.map { String(format: "%.2f", $0) } ?? "nil")")
+            Text("vol=\(engine.lastVolume.map { String(format: "%.2f", $0) } ?? "nil")")
+        }
+        .font(.system(size: 20, weight: .bold, design: .monospaced))
+        .foregroundStyle(.green)
+        .padding(10)
+        .background(.black.opacity(0.85), in: .rect(cornerRadius: 8))
+        .allowsHitTesting(false)
+        .frame(maxWidth: .infinity, alignment: .top)
+        .padding(.top, topPadding)
+    }
+
     private var diagHud: some View {
-        if DebugEntry.diag {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(pip.debugText)
-                Text("fs=\(isFullscreen) ready=\(engine.isReady) play=\(engine.isPlaying)")
-                Text("dev=\(String(describing: UIDevice.current.orientation.rawValue))")
+        Group {
+            if DebugEntry.diag {
+                diagPanel(topPadding: 120)
             }
-            .font(.system(size: 20, weight: .bold, design: .monospaced))
-            .foregroundStyle(.green)
-            .padding(10)
-            .background(.black.opacity(0.85), in: .rect(cornerRadius: 8))
-            .allowsHitTesting(false)
-            .frame(maxWidth: .infinity, alignment: .top)
-            .padding(.top, 120)
         }
     }
 
@@ -290,20 +321,25 @@ struct VideoDetailView: View {
         }
     }
 
+    /// 中央控制簇：后退 10 秒 / 播放暂停 / 前进 10 秒。
+    ///
+    /// 原来只有一颗孤零零的播放键，跳转只能靠拖进度条——短视频来回找那几秒很别扭。
     @ViewBuilder
-    private var centerPlayButton: some View {
+    private var centerControls: some View {
         if engine.isReady, !engine.isLoading {
-            Button {
-                engine.togglePlay()
-            } label: {
-                Image(systemName: engine.isPlaying ? "pause.fill" : "play.fill")
-                    .font(.system(size: 18, weight: .bold))
-                    .foregroundStyle(Theme.ink)
-                    .frame(width: 46, height: 46)
-            }
-            .buttonStyle(.iconPress)
-            .glassEffect(.regular.tint(Theme.pink.opacity(0.6)).interactive(), in: .circle)
+            PlayerCenterCluster(
+                isPlaying: engine.isPlaying,
+                playSize: 54,
+                skipSize: 40,
+                onToggle: { engine.togglePlay() },
+                onSkip: { skip(by: $0) }
+            )
         }
+    }
+
+    /// ±10 秒。`seek` 内部会把范围夹到 `0...duration`，这里不用再判断
+    private func skip(by seconds: Double) {
+        engine.seek(to: engine.currentTime + seconds)
     }
 
     private var backButton: some View {
@@ -426,43 +462,15 @@ struct VideoDetailView: View {
     @ViewBuilder
     private var inlineBottomBar: some View {
         if engine.isReady {
-            HStack(spacing: 10) {
-                Text(Int(engine.currentTime).clockText)
-                    .font(.system(size: 10, design: .monospaced))
-                    .foregroundStyle(Theme.ink)
-
-                progressSlider
-
-                Text(Int(engine.duration).clockText)
-                    .font(.system(size: 10, design: .monospaced))
-                    .foregroundStyle(Theme.inkDim)
-            }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-            .glassEffect(.regular, in: .rect(cornerRadius: 16))
-            .padding(10)
+            PlayerProgressCapsule(
+                current: engine.currentTime,
+                duration: engine.duration,
+                compact: true,
+                onSeek: { engine.seek(to: $0) }
+            )
+            .padding(.horizontal, 10)
+            .padding(.bottom, 9)
         }
-    }
-
-    private var progressSlider: some View {
-        Slider(
-            value: Binding(
-                get: { scrubbing ? scrubValue : engine.currentTime },
-                set: { scrubValue = $0 }
-            ),
-            in: 0...Swift.max(1, engine.duration),
-            onEditingChanged: { editing in
-                if editing {
-                    scrubValue = engine.currentTime
-                    scrubbing = true
-                } else {
-                    engine.seek(to: scrubValue)
-                    scrubbing = false
-                }
-            }
-        )
-        .tint(Theme.pink)
-        .controlSize(.mini)
     }
 
     // MARK: - 全屏层
@@ -496,18 +504,30 @@ struct VideoDetailView: View {
                 .transition(.opacity)
             }
 
+            // 中央控制簇单独摆放，不塞进上面那个 VStack：
+            // VStack 里它会被 topBar/bottomBar 的空间挤压，落不到真实中心
+            if controlsVisible {
+                PlayerCenterCluster(
+                    isPlaying: engine.isPlaying,
+                    playSize: 64,
+                    skipSize: 48,
+                    onToggle: { engine.togglePlay() },
+                    onSkip: { skip(by: $0) }
+                )
+                .opacity(engine.isReady ? 1 : 0)
+                // 手势 HUD 一出来就把控制簇让开，免得两者叠在一起
+                .opacity(hud == nil ? 1 : 0)
+                .transition(.opacity)
+            }
+
+            if let hud {
+                PlayerHUDBubble(kind: hud, value: hudValue)
+                    .transition(.opacity.combined(with: .scale(scale: 0.92)))
+                    .allowsHitTesting(false)
+            }
+
             if DebugEntry.diag {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(pip.debugText)
-                    Text("fs=\(isFullscreen) ready=\(engine.isReady) play=\(engine.isPlaying)")
-                }
-                .font(.system(size: 20, weight: .bold, design: .monospaced))
-                .foregroundStyle(.green)
-                .padding(10)
-                .background(.black.opacity(0.85), in: .rect(cornerRadius: 8))
-                .allowsHitTesting(false)
-                .frame(maxWidth: .infinity, alignment: .top)
-                .padding(.top, 60)
+                diagPanel(topPadding: 60)
             }
         }
         .contentShape(.rect)
@@ -516,6 +536,8 @@ struct VideoDetailView: View {
                 controlsVisible.toggle()
             }
         }
+        // 全屏才启用亮度/音量竖滑
+        .playerGestures(engine: engine, systemGestures: true, hud: $hud, hudValue: $hudValue)
     }
 
     private var fullscreenTopBar: some View {
@@ -574,31 +596,12 @@ struct VideoDetailView: View {
     }
 
     private var fullscreenBottomBar: some View {
-        HStack(spacing: 14) {
-            Button {
-                engine.togglePlay()
-            } label: {
-                Image(systemName: engine.isPlaying ? "pause.fill" : "play.fill")
-                    .font(.system(size: 17, weight: .bold))
-                    .foregroundStyle(Theme.ink)
-                    .frame(width: 42, height: 42)
-            }
-            .buttonStyle(.iconPress)
-            .glassEffect(.regular.tint(Theme.pink).interactive(), in: .circle)
-
-            Text(Int(engine.currentTime).clockText)
-                .font(.system(size: 12, design: .monospaced))
-                .foregroundStyle(Theme.ink)
-
-            progressSlider
-
-            Text(Int(engine.duration).clockText)
-                .font(.system(size: 12, design: .monospaced))
-                .foregroundStyle(Theme.inkDim)
-        }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 12)
-        .glassEffect(.regular, in: .rect(cornerRadius: 24))
+        PlayerProgressCapsule(
+            current: engine.currentTime,
+            duration: engine.duration,
+            compact: false,
+            onSeek: { engine.seek(to: $0) }
+        )
     }
 
     // MARK: - 信息区
