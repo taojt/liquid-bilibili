@@ -301,7 +301,7 @@ struct VideoDetailView: View {
                     .foregroundStyle(Theme.ink)
                     .frame(width: 46, height: 46)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.iconPress)
             .glassEffect(.regular.tint(Theme.pink.opacity(0.6)).interactive(), in: .circle)
         }
     }
@@ -311,6 +311,7 @@ struct VideoDetailView: View {
             engine.stop()
             dismiss()
         }
+        .accessibilityIdentifier("detailBack")
         .padding(10)
     }
 
@@ -323,8 +324,11 @@ struct VideoDetailView: View {
     }
 
     /// 竖屏下的控制簇：弹幕开关 / 弹幕设置 / 倍速 / 小窗 / 全屏
+    ///
+    /// spacing 是 10 而不是更紧凑的 6：每个按钮点按时外围会浮出一圈椭圆玻璃，
+    /// 间距小于两倍外扩量时，相邻两颗的椭圆会粘成一条白带。
     private var inlineControlCluster: some View {
-        HStack(spacing: 6) {
+        HStack(spacing: 10) {
             danmakuToggle
             danmakuSettingsButton
             speedMenu
@@ -356,7 +360,7 @@ struct VideoDetailView: View {
                 .foregroundStyle(danmakuSettings.isDefault ? Theme.ink : Theme.pink)
                 .frame(width: 34, height: 34)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.iconPress)
         .glassEffect(
             danmakuSettings.isDefault
                 ? .regular.interactive()
@@ -376,7 +380,7 @@ struct VideoDetailView: View {
                 .foregroundStyle(showDanmaku ? Theme.ink : Theme.inkFaint)
                 .frame(width: 34, height: 34)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.iconPress)
         .glassEffect(
             showDanmaku
                 ? .regular.tint(Theme.pink.opacity(0.55)).interactive()
@@ -579,7 +583,7 @@ struct VideoDetailView: View {
                     .foregroundStyle(Theme.ink)
                     .frame(width: 42, height: 42)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.iconPress)
             .glassEffect(.regular.tint(Theme.pink).interactive(), in: .circle)
 
             Text(Int(engine.currentTime).clockText)
@@ -731,7 +735,7 @@ struct VideoDetailView: View {
             .frame(maxWidth: .infinity)
             .frame(height: 54)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.liquidPress)
         .glassEffect(
             active
                 ? .regular.tint(Theme.pink.opacity(0.28)).interactive()
@@ -764,7 +768,7 @@ struct VideoDetailView: View {
             .frame(maxWidth: .infinity)
             .frame(height: 54)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.liquidPress)
         .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 16))
         .disabled(detail == nil)
     }
@@ -823,7 +827,7 @@ struct VideoDetailView: View {
                 .padding(14)
             }
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.liquidPress)
         .disabled(detail == nil)
     }
 
@@ -863,7 +867,7 @@ struct VideoDetailView: View {
                         .font(.system(size: 11, weight: .medium))
                         .foregroundStyle(Theme.blue)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.liquidPress)
             }
             .padding(16)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -898,7 +902,7 @@ struct VideoDetailView: View {
                         } label: {
                             VideoGridCard(model: model)
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(.cardPress)
                     }
                 }
             }

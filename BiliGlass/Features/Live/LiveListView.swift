@@ -98,7 +98,7 @@ struct LiveListView: View {
                     } label: {
                         LiveCard(room: room)
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.cardPress)
                     .task {
                         if room.id == rooms.last?.id, hasMore, !isLoading {
                             await load()

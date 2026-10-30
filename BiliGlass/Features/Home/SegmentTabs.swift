@@ -56,7 +56,7 @@ struct SegmentTabs: View {
                 inactiveLabel(title)
             }
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.chipPress)
     }
 
     /// 选中态：高饱和粉紫渐变实底 + 白字。

@@ -110,6 +110,7 @@ struct UserSpaceView: View {
 
     private var backButton: some View {
         GlassIconButton(systemName: "chevron.left", size: 32) { dismiss() }
+            .accessibilityIdentifier("userSpaceBack")
     }
 
     private var avatar: some View {
@@ -183,7 +184,7 @@ struct UserSpaceView: View {
                     in: .capsule
                 )
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.liquidPress)
         .disabled(followBusy)
     }
 
@@ -215,7 +216,7 @@ struct UserSpaceView: View {
                         } label: {
                             VideoGridCard(model: model)
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(.cardPress)
                         .task { await store.loadMoreIfNeeded(current: model) }
                     }
                 }

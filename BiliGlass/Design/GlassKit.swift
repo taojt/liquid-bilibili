@@ -63,6 +63,144 @@ extension View {
     }
 }
 
+// MARK: - 液态点按
+
+/// 点按时在控件**外围**浮出一圈更大的椭圆玻璃。
+///
+/// 参照 Apple TV 底栏选中态：不是给按钮本身镀一层，而是一块比内容更大的
+/// 椭圆玻璃托在下面，边缘有一圈受光高光。所以这里用 `.padding(-spread)`
+/// 把椭圆往外扩，而不是贴着按钮边界画。
+///
+/// 不用真实 `glassEffect` 的原因：按压是高频、瞬态的交互，每次按压都新建
+/// 销毁一层玻璃材质，首次出现会有明显掉帧，而且材质出现/消失是硬切。
+/// 这里用「半透明填充 + 受光描边 + 柔光晕」画出来，靠动画驱动，
+/// 观感和玻璃一致但代价接近于零。
+/// 点按椭圆的轮廓。
+///
+/// 一律用胶囊是不行的：底栏、圆形图标按钮是矮胖形状，胶囊正合适；
+/// 但封面卡片是近乎方形的矩形，胶囊的两端半圆会在卡片外圈糊出一圈
+/// 白光大圆框，横向还会溢到相邻卡片上。所以卡片类改成跟随卡片圆角。
+enum PressShape {
+    case capsule
+    case rounded(CGFloat)
+}
+
+struct LiquidPressStyle: ButtonStyle {
+    /// 按下时内缩比例。控制类按钮别缩太多，卡片可以多一点
+    var scale: CGFloat = 0.96
+    /// 椭圆相对控件外扩多少（负 padding）
+    var spread: CGFloat = 10
+    /// 光晕颜色，默认无
+    var glow: Color?
+    /// 椭圆轮廓
+    var shape: PressShape = .capsule
+
+    func makeBody(configuration: Configuration) -> some View {
+        // `-debugPressPreview YES` 时全部常显，真机没法脚本化按压，靠这个核对椭圆尺寸
+        let pressed = configuration.isPressed || DebugEntry.pressPreview
+        return configuration.label
+            .scaleEffect(pressed ? scale : 1)
+            .background {
+                LiquidPressOval(isPressed: pressed, spread: spread, glow: glow, shape: shape)
+            }
+            .animation(.spring(response: 0.30, dampingFraction: 0.62), value: pressed)
+    }
+}
+
+private struct LiquidPressOval: View {
+    let isPressed: Bool
+    let spread: CGFloat
+    let glow: Color?
+    let shape: PressShape
+
+    @Environment(\.colorScheme) private var scheme
+
+    /// 擦除成 AnyShape 是为了让 fill / stroke 用同一份轮廓。
+    /// 按压是瞬态渲染，这点类型擦除的代价可以忽略。
+    private var outline: AnyShape {
+        switch shape {
+        case .capsule:
+            AnyShape(Capsule(style: .continuous))
+        case .rounded(let radius):
+            AnyShape(RoundedRectangle(cornerRadius: radius, style: .continuous))
+        }
+    }
+
+    var body: some View {
+        ZStack {
+            if let glow {
+                outline
+                    .fill(glow.opacity(scheme == .dark ? 0.45 : 0.30))
+                    .blur(radius: 16)
+                    .padding(-spread - 4)
+            }
+
+            outline
+                .fill(fill)
+                .overlay {
+                    // 顶部受光 / 底部反光，玻璃的立体感全靠这道描边
+                    outline.stroke(
+                        LinearGradient(
+                            stops: scheme == .dark
+                                ? [
+                                    .init(color: .white.opacity(0.62), location: 0),
+                                    .init(color: .white.opacity(0.10), location: 0.5),
+                                    .init(color: .white.opacity(0.26), location: 1)
+                                ]
+                                : [
+                                    .init(color: .white.opacity(0.98), location: 0),
+                                    .init(color: .white.opacity(0.45), location: 0.5),
+                                    .init(color: .black.opacity(0.06), location: 1)
+                                ],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        ),
+                        lineWidth: 1
+                    )
+                }
+                // 浅色下白底和页面底色贴合，只能靠一圈软影把轮廓托出来
+                .shadow(
+                    color: scheme == .dark ? .black.opacity(0.28) : .black.opacity(0.12),
+                    radius: 9,
+                    y: 3
+                )
+                .padding(-spread)
+        }
+        .scaleEffect(isPressed ? 1 : 0.82)
+        .opacity(isPressed ? 1 : 0)
+        .allowsHitTesting(false)
+        .animation(.spring(response: 0.30, dampingFraction: 0.62), value: isPressed)
+    }
+
+    /// 深色下靠提亮（白 0.15），浅色下靠一层薄白 + 外投影界定轮廓。
+    /// 浅色不要再往上加：到 0.6 左右就成了一块实心白片，
+    /// 压在深色视频上尤其突兀，玻璃的「透」完全没了。
+    private var fill: Color {
+        scheme == .dark ? .white.opacity(0.15) : .white.opacity(0.45)
+    }
+}
+
+extension ButtonStyle where Self == LiquidPressStyle {
+    /// 全 App 通用的点按反馈：外扩一圈椭圆玻璃
+    static var liquidPress: LiquidPressStyle { LiquidPressStyle() }
+
+    /// 封面卡片 / 列表行：轮廓跟着卡片圆角走，外扩收窄，
+    /// 免得压到相邻卡片上
+    static var cardPress: LiquidPressStyle {
+        LiquidPressStyle(scale: 0.975, spread: 6, shape: .rounded(Theme.coverRadius + 3))
+    }
+
+    /// 图标按钮：比默认更收一点，避免椭圆盖住相邻的图标
+    static var iconPress: LiquidPressStyle {
+        LiquidPressStyle(scale: 0.93, spread: 4)
+    }
+
+    /// 矮扁的胶囊标签（二级 Tab 这类）：纵向再收，否则会压到下一条内容
+    static var chipPress: LiquidPressStyle {
+        LiquidPressStyle(scale: 0.95, spread: 6)
+    }
+}
+
 // MARK: - 玻璃面板
 
 /// 统一的液态玻璃面板。所有自定义玻璃都应经由这里，
@@ -140,7 +278,7 @@ struct GlassIconButton: View {
                     in: .circle
                 )
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.liquidPress)
         .liquidEdge(Circle(), lineWidth: 0.9)
     }
 }

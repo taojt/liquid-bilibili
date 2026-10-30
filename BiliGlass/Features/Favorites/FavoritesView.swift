@@ -38,7 +38,7 @@ struct FavoritesView: View {
                             } label: {
                                 folderRow(folder)
                             }
-                            .buttonStyle(.plain)
+                            .buttonStyle(.liquidPress)
                         }
                     }
                 }

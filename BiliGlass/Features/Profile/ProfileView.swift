@@ -148,7 +148,7 @@ struct ProfileView: View {
                     )
             }
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.liquidPress)
     }
 
     // MARK: - 会话信息
@@ -161,7 +161,7 @@ struct ProfileView: View {
                 } label: {
                     linkRow(icon: "star.fill", title: "我的收藏")
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.liquidPress)
             }
             .padding(.vertical, 4)
         }

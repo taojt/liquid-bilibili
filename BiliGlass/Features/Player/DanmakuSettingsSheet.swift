@@ -184,7 +184,7 @@ struct DanmakuSettingsSheet: View {
                     )
             }
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.liquidPress)
     }
 
     /// 用三个小方块示意区域落点，比 SF Symbol 直观

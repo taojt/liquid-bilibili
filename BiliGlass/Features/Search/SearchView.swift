@@ -80,7 +80,7 @@ struct SearchView: View {
                             .font(.system(size: 13))
                             .foregroundStyle(Theme.inkFaint)
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.liquidPress)
                 }
             }
             .padding(.horizontal, 14)
@@ -90,7 +90,7 @@ struct SearchView: View {
             Button("取消") { dismiss() }
                 .font(.system(size: 14, weight: .medium))
                 .foregroundStyle(Theme.pink)
-                .buttonStyle(.plain)
+                .buttonStyle(.liquidPress)
         }
         .padding(.horizontal, Theme.contentPadding)
         .padding(.top, 6)
@@ -152,7 +152,7 @@ struct SearchView: View {
                         } label: {
                             VideoGridCard(model: model)
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(.cardPress)
                         .task {
                             if model.id == results.last?.id, hasMore, !isLoading {
                                 await search(reset: false)
@@ -200,7 +200,7 @@ struct SearchView: View {
                         } label: {
                             hotRow(index: index, word: word)
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(.liquidPress)
 
                         if index < hotWords.count - 1 {
                             Rectangle()

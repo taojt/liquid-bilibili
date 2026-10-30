@@ -131,7 +131,7 @@ struct HomeView: View {
                     } label: {
                         searchEntry
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.liquidPress)
 
                     avatarButton
                 }
@@ -195,7 +195,7 @@ struct HomeView: View {
                 .glassEffect(.regular.interactive(), in: .circle)
                 .liquidEdge(Circle(), lineWidth: 0.8)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.iconPress)
         .transition(.scale(scale: 0.6).combined(with: .opacity))
     }
 
@@ -238,14 +238,14 @@ struct HomeView: View {
                 } label: {
                     avatarCircle
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.iconPress)
             } else {
                 Button {
                     showLogin = true
                 } label: {
                     avatarCircle
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.iconPress)
             }
         }
     }

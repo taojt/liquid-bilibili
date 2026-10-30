@@ -90,65 +90,41 @@ struct FloatingTabBar: View {
             VStack(spacing: 3) {
                 Image(systemName: active ? item.activeIcon : item.icon)
                     .font(.system(size: 16, weight: .semibold))
-                    // 选中项的图标压在粉玻璃砖上，必须用白色，否则同色系糊成一团
-                    .foregroundStyle(active ? .white : Theme.ink)
-                    .frame(width: 34, height: 27)
-                    .background {
-                        if active {
-                            tile
-                        }
-                    }
+                    .frame(height: 24)
 
                 Text(item.title)
                     .font(.system(size: 9.5, weight: active ? .semibold : .medium))
-                    .foregroundStyle(active ? Theme.pink : Theme.ink.opacity(0.78))
             }
+            .foregroundStyle(active ? Theme.pink : Theme.ink.opacity(0.78))
             // 透明玻璃背后是封面/字幕这类高对比内容，一圈极淡的描边阴影
             // 就能把字从背景里"抠"出来，比加厚材质划算得多
             .shadow(color: .black.opacity(scheme == .dark ? 0.45 : 0.22), radius: 2.5, y: 0.5)
             .frame(maxWidth: .infinity)
+            .frame(height: 50)
+            .background {
+                if active {
+                    selectionOval
+                }
+            }
             .contentShape(.rect)
         }
-        .buttonStyle(LiquidTabStyle())
+        // 点按同样浮出一圈更大的椭圆玻璃（spread 小一点，刚好包住整项）
+        .buttonStyle(LiquidPressStyle(scale: 0.94, spread: 4))
     }
 
-    /// 选中项底下的小玻璃砖。
+    /// 选中态：一块**包住图标和文字**的大椭圆玻璃（Apple TV 那种），
+    /// 而不是只垫在图标下面的小方块。`glassEffectID` 让它在两项之间流动。
     ///
-    /// 纯玻璃 + 0.24 的粉 tint：垫实底会把玻璃完全挡住，退化成粉色圆角方块；
-    /// tint 再高也一样——砖必须是「染上品牌色的玻璃」，能透出背后的瀑布流。
-    private var tile: some View {
-        tileShape
+    /// tint 只给 0.10：再高就变成一块粉色的实心椭圆，玻璃的通透感没了。
+    /// 品牌色交给图标和文字去承担，椭圆本身保持中性玻璃。
+    private var selectionOval: some View {
+        Capsule(style: .continuous)
             .glassEffect(
-                .regular.tint(Theme.pink.opacity(0.24)).interactive(),
-                in: tileShape
+                .regular.tint(Theme.pink.opacity(0.10)).interactive(),
+                in: .capsule
             )
-            .liquidEdge(tileShape, lineWidth: 0.8)
+            .liquidEdge(Capsule(style: .continuous), lineWidth: 1)
             .glassEffectID("tab-active", in: tabNamespace)
-    }
-}
-
-/// 液态点按。
-///
-/// 按下时整项轻微内缩，同时从图标位置扩开一团柔光——缩是"按下去"，
-/// 光是"玻璃被挤压后透出来的亮"，两件事叠在一起才有液态感。
-/// 用 `ButtonStyle` 而不是 `onLongPressGesture`：后者的 pressing 状态
-/// 拿不到真实的按下/抬起时机，动画会断。
-private struct LiquidTabStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            // 0.90 而不是更低：整项连文字一起缩，缩太多会显得"塌"
-            .scaleEffect(configuration.isPressed ? 0.90 : 1)
-            .background {
-                // 对齐图标中心：整项高约 42，图标中心在 y≈13.5，故上移 7.5
-                Circle()
-                    .fill(Theme.pink.opacity(0.50))
-                    .frame(width: 40, height: 40)
-                    .blur(radius: 13)
-                    .scaleEffect(configuration.isPressed ? 1.28 : 0.5)
-                    .opacity(configuration.isPressed ? 0.75 : 0)
-                    .offset(y: -7.5)
-                    .allowsHitTesting(false)
-            }
-            .animation(.spring(response: 0.30, dampingFraction: 0.58), value: configuration.isPressed)
+            .padding(.horizontal, 1)
     }
 }

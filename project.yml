@@ -65,3 +65,31 @@ targets:
           NSAllowsArbitraryLoadsInWebContent: true
         UIApplicationSceneManifest:
           UIApplicationSupportsMultipleScenes: false
+
+  # 只用来自动化验证手势（左滑返回）。iOS 上没法从命令行注入触摸，
+  # XCUITest 的 coordinate + press(forDuration:thenDragTo:) 是唯一可靠方式。
+  BiliGlassUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: BiliGlassUITests
+    dependencies:
+      - target: BiliGlass
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.biliglass.app.uitests
+        TEST_TARGET_NAME: BiliGlass
+        GENERATE_INFOPLIST_FILE: YES
+
+schemes:
+  BiliGlass:
+    build:
+      targets:
+        BiliGlass: all
+        BiliGlassUITests: [test]
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets:
+        - BiliGlassUITests

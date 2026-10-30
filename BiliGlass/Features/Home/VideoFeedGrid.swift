@@ -107,7 +107,7 @@ struct VideoFeedGrid: View {
                     } label: {
                         VideoGridCard(model: model)
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.cardPress)
                     .task {
                         await store.loadMoreIfNeeded(current: model)
                     }

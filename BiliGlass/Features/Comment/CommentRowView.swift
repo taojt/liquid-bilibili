@@ -82,7 +82,7 @@ struct CommentRowView: View {
                 }
             }
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.liquidPress)
         .disabled(comment.member.mid == 0)
     }
 
@@ -120,7 +120,7 @@ struct CommentRowView: View {
             .padding(.vertical, 3)
             .contentShape(.rect)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.liquidPress)
     }
 
     // MARK: - 正文
@@ -151,7 +151,7 @@ struct CommentRowView: View {
                     .foregroundStyle(Theme.inkFaint)
                     .contentShape(.rect)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.liquidPress)
         }
     }
 
@@ -184,7 +184,7 @@ struct CommentRowView: View {
                                     .foregroundStyle(Theme.blue)
                                     .padding(.vertical, 6)
                             }
-                            .buttonStyle(.plain)
+                            .buttonStyle(.liquidPress)
                         }
                         Button {
                             Task { await service.toggleReplies(threadID: thread.id) }
@@ -194,7 +194,7 @@ struct CommentRowView: View {
                                 .foregroundStyle(Theme.inkFaint)
                                 .padding(.vertical, 6)
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(.liquidPress)
                     }
                 } else {
                     Button {
@@ -209,7 +209,7 @@ struct CommentRowView: View {
                         .foregroundStyle(Theme.blue)
                         .padding(.vertical, 6)
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.liquidPress)
                 }
             }
             .padding(.leading, 10)
@@ -244,7 +244,7 @@ struct CommentRowView: View {
         } label: {
             avatar
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.liquidPress)
         .disabled(comment.member.mid == 0)
     }
 

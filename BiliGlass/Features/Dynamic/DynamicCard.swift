@@ -27,7 +27,7 @@ struct DynamicCard: View {
                 } label: {
                     archiveCard
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.cardPress)
             }
 
             statRow
@@ -64,7 +64,7 @@ struct DynamicCard: View {
                     }
                 }
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.liquidPress)
             .disabled(cell.authorMid == nil)
 
             Spacer(minLength: 0)

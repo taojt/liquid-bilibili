@@ -154,7 +154,7 @@ struct CommentSection: View {
                     .strokeBorder(Theme.ink.opacity(0.07), lineWidth: 0.5)
             }
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.liquidPress)
     }
 
     // MARK: - 列表状态
@@ -231,7 +231,7 @@ struct CommentSection: View {
                         .padding(.vertical, 10)
                         .glassEffect(.regular.interactive(), in: .capsule)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.liquidPress)
                 .padding(.top, 10)
             }
         }

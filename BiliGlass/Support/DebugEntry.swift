@@ -108,6 +108,11 @@ enum DebugEntry {
         UserDefaults.standard.bool(forKey: "debugDiag")
     }
 
+    /// 所有按钮常显「按下」态。真机没法脚本化长按，靠这个核对点按椭圆玻璃的尺寸和亮度
+    static var pressPreview: Bool {
+        UserDefaults.standard.bool(forKey: "debugPressPreview")
+    }
+
     /// 首页启动后直接推进搜索页
     static var search: Bool {
         UserDefaults.standard.bool(forKey: "debugSearch")
@@ -152,7 +157,7 @@ enum DebugEntry {
             "debugDanmakuArea", "debugDanmakuOpacity", "debugDanmakuInfo",
             "debugComment", "debugTripleBurst", "debugKeyword", "debugRate",
             "debugCommentComposer", "debugCollapsed", "debugScroll", "debugPip",
-            "debugDiag"
+            "debugDiag", "debugPressPreview"
         ] {
             defaults.removeObject(forKey: key)
         }

@@ -125,7 +125,7 @@ struct MySpaceView: View {
                         .frame(height: 28)
                         .glassEffect(.regular.interactive(), in: .capsule)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.liquidPress)
             }
 
             avatar
@@ -308,7 +308,7 @@ struct MySpaceView: View {
                         }
                     }
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.liquidPress)
             }
         }
         .padding(.vertical, 2)
@@ -381,7 +381,7 @@ struct MySpaceView: View {
                     } label: {
                         VideoGridCard(model: model)
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.cardPress)
                     .task { loadMore(model) }
                 }
             }
@@ -435,7 +435,7 @@ struct MySpaceView: View {
                     } label: {
                         folderRow(folder)
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.liquidPress)
                 }
             }
         }

@@ -18,7 +18,7 @@
 | 直播 | 直播间列表、拉流播放、实时弹幕、手动 / 转屏全屏 |
 | 账号 | 扫码登录，Cookie 会话持久化，冷启动自动恢复登录态 |
 | 手势 | 所有被推入的页面支持**左滑返回**（导航栏隐藏后系统手势被禁用，已修复） |
-| 外观 | 近黑画布 + 品牌色极光底、封面即卡片的大圆角视觉（参考 Apple TV）；液态玻璃（iOS 26+ `glassEffect` + 自绘光学边缘）；跟随系统 / 白天 / 夜间三种模式，明暗双套 App 图标 |
+| 外观 | 近黑画布 + 品牌色极光底、封面即卡片的大圆角视觉（参考 Apple TV）；液态玻璃（iOS 26+ `glassEffect` + 自绘光学边缘）；**全局点按外围浮出椭圆液态玻璃**（跟随控件形状）；跟随系统 / 白天 / 夜间三种模式，明暗双套 App 图标 |
 
 ## 示意图
 
@@ -122,6 +122,7 @@ xcrun simctl spawn $UDID defaults write $APP debugCollapsed -bool YES         # 
 xcrun simctl spawn $UDID defaults write $APP debugScroll -bool YES            # 列表首屏滚到中段（复现滚动后状态）
 xcrun simctl spawn $UDID defaults write $APP debugPip -bool YES               # 起播后自动进画中画小窗
 xcrun simctl spawn $UDID defaults write $APP debugDiag -bool YES              # 播放区显示画中画/全屏诊断 HUD
+xcrun simctl spawn $UDID defaults write $APP debugPressPreview -bool YES     # 所有按钮常显按下态（核对点按椭圆尺寸）
 xcrun simctl launch $UDID $APP
 ```
 
@@ -144,6 +145,27 @@ xcrun devicectl device process launch --device <真机 UDID> \
 ```bash
 xcrun devicectl device capture screenshot --device <真机 UDID> --destination /tmp/shot.png
 ```
+
+### 自动化验证
+
+有些交互没法靠截图证明，只能真的去滑、去点。`BiliGlassUITests` 用 XCUITest 的坐标拖拽把它们固定成回归用例：
+
+```bash
+xcodebuild -project BiliGlass.xcodeproj -scheme BiliGlass \
+  -destination 'id=<模拟器 UDID>' -derivedDataPath build-sim \
+  -skipMacroValidation CODE_SIGNING_ALLOWED=NO test
+```
+
+| 用例 | 验证的东西 |
+| --- | --- |
+| `testSwipeBackFromVideoDetail` | 详情页从左缘右滑能退回首页（`detailBack` 消失） |
+| `testSwipeBackFromUserSpace` | UP 主主页同样能滑回上一层 |
+| `testSwipeBackTwiceAfterPushResetsDelegate` | push 之后 SwiftUI 会重设 delegate，补装是否仍然有效 |
+| `testTabBarStillTappableAfterPressStyleSwap` | 全局换成自定义 ButtonStyle 后底栏仍点得动、App 没崩 |
+
+边缘返回有个坑：起点必须压在屏幕最左侧（系统识别区约 20pt 宽），并且结尾要有停顿，否则会被判成普通轻扫。用例里用 `press(forDuration:thenDragTo:withVelocity:thenHoldForDuration:)` 而不是 `swipeRight()`，后者从屏幕中间起手，永远触发不了边缘手势。
+
+页面标识（`detailBack` / `userSpaceBack`）是 `accessibilityIdentifier`，顺带也改善了无障碍。
 
 ### App 图标
 
@@ -180,7 +202,7 @@ xcrun swift scripts/generate-icon.swift BiliGlass/Resources/Assets.xcassets/AppI
 
 整页背景是「近黑画布 + 两团品牌色极光」（`CanvasBackdrop`）。纯色/纯渐变底会让玻璃无从折射——玻璃的质感来自它背后**有东西**；叠上大范围低透明度的粉、紫、蓝色斑之后，悬浮栏和卡片掠过去时能真的看到材质在变亮变暗。浅色主题下同样的色斑会读成一层柔和的粉紫雾，所以透明度按 `colorScheme` 分别取 0.55 / 0.22，否则顶部搜索框和 Tab 会糊在一起。
 
-卡片造型向 Apple TV 靠：**封面就是卡片本体**，圆角 20、一道极细受光边、往下 9pt 的柔投影，底部压一层黑色渐变让角标可读；标题和 UP 主信息直接落在画布上，不再给整张卡片套玻璃底。悬浮底栏同理——近乎满宽的玻璃条，图标在上文字在下，选中项的图标落在一块独立小玻璃砖上，`glassEffectID` 让它在两点之间流动，途中会和底下的玻璃条短暂融合。点按时整项内缩到 0.90 并从图标位置扩开一团粉色柔光（`LiquidTabStyle`），配合 `.selection` 触感。
+卡片造型向 Apple TV 靠：**封面就是卡片本体**，圆角 20、一道极细受光边、往下 9pt 的柔投影，底部压一层黑色渐变让角标可读；标题和 UP 主信息直接落在画布上，不再给整张卡片套玻璃底。悬浮底栏同理——近乎满宽的玻璃条，图标在上文字在下，选中项的图标和文字被一块大椭圆玻璃整块托住，`glassEffectID` 让它在两点之间流动，途中会和底下的玻璃条短暂融合。点按时整项轻微内缩、外围浮出一圈更大的椭圆玻璃，配合 `.selection` 触感（见「点按反馈」）。
 
 底栏下方还有一道 104pt 的渐隐，末端只到 0.42——**不能压满**。压到 0.9 以上时内容在到达玻璃之前就被洗成纯底色，玻璃背后什么都没有，透光折射无从发生，栏看上去就是一块实心白板。
 
@@ -446,9 +468,33 @@ GET .../live_xxx-1793013747.ts   无 Referer → 200
 
 底部 sheet 在 iOS 27 默认是**玻璃底**，不处理会透出下面的详情页，浅色下分区和 chip 糊成一片。要么显式 `.presentationBackground(Theme.canvas)`，要么把 sheet 内容铺满——这里选前者。
 
+### 点按反馈（椭圆液态玻璃）
+
+参照 Apple TV 底栏：按下时不是给控件本身镀一层，而是一块**比控件大一圈的椭圆玻璃从底下浮出来**，边缘带一圈顶部受光、底部反光的高光。实现是 `LiquidPressStyle`——用 `.padding(-spread)` 把轮廓往外扩，按下时从 `scale(0.82)` + 透明淡入，`spring(0.30, 0.62)` 驱动。
+
+为什么不用真的 `glassEffect`：按压是高频瞬态交互，每按一次就新建销毁一层玻璃材质，首次出现会掉帧，而且材质是硬切、没法做缩放淡入。这里用「半透明填充 + 受光描边 + 软投影」画出来，观感一致但代价接近零。浅色下填充只给到白 0.45——再往上就是一块实心白片，压在深色视频上尤其突兀。
+
+轮廓形状必须跟着控件走（`PressShape`）：
+
+- `.liquidPress`（胶囊，外扩 10）——搜索框、胶囊标签这类矮胖控件
+- `.cardPress`（跟随 `coverRadius` 的圆角矩形，外扩 6）——封面卡片。**一律用胶囊是错的**：胶囊套在近方形卡片上，两端半圆会在卡片外圈糊出一圈白光大圆环，横向还会溢到相邻卡片。
+- `.iconPress`（胶囊，外扩 4）/ `.chipPress`（外扩 6）——34pt 圆形图标、二级 Tab
+
+外扩量受**相邻控件间距**约束：两颗按钮的椭圆会粘成一条白带。播放器右上那排控制按钮因此把 `HStack` 间距从 6 提到 10。
+
+真机上没法脚本化长按，`-debugPressPreview YES` 让所有按钮常显按下态，用来核对椭圆尺寸和亮度。
+
 ### 左滑返回
 
-详情页等自定义顶栏的页面都用了 `navigationBarBackButtonHidden(true)` + 隐藏导航栏，SwiftUI 在导航栏隐藏时会顺带禁用 `interactivePopGestureRecognizer`，左滑返回就死了。`PopGestureFix` 在每个 `NavigationStack` 根部挂一个透明 `UIViewControllerRepresentable`，把手势 delegate 换成自己的实现并重新启用；delegate 的 `gestureRecognizerShouldBegin` 只在栈深 > 1 时放行，避免在根视图上响应边缘滑动把导航栈滑出怪状态。patch 是幂等的，push/pop 之后任何一次布局更新都会重新补一遍。
+自定义顶栏的页面都用了 `navigationBarBackButtonHidden(true)` + 隐藏导航栏，SwiftUI 在导航栏隐藏时会把手势 delegate 换回内部实现并禁用 `interactivePopGestureRecognizer`，左滑返回就死了。
+
+修复有三处关键，缺一不可：
+
+1. **不能挂在 `NavigationStack` 的 `.background` 上**。第一版就是这么写的，靠 `vc.navigationController` 反查所属导航栈——但 `.background` 里的控制器不在导航栈内部，`navigationController` 恒为 nil，patch 一次都没生效过。现在从 key window 往下递归遍历 `children` + `presentedViewController`，把遇到的每个 `UINavigationController` 都装上。
+2. **push/pop 之后会被换回去**，所以监听 `UINavigationControllerDidShowViewControllerNotification`（没有公开常量，只能用字符串）和 `didBecomeActive` 补装。patch 幂等。
+3. delegate 在 `gestureRecognizerShouldBegin` 里依次尝试 `view as? UINavigationController` → responder 链 → 最近装上的导航栈兜底，**只在栈深 > 1 时放行**；在根视图上响应边缘滑动会把导航栈滑出怪状态。同时放行 `shouldRecognizeSimultaneouslyWith`，否则嵌套 `ScrollView` 里手势直接失败。
+
+这段没法靠肉眼回归，用 XCUITest 的坐标拖拽固定下来（见「自动化验证」）。
 
 ### 画中画小窗
 
@@ -515,4 +561,5 @@ BiliGlass/
     ├── Login/    扫码登录
     ├── Player/   AVPlayerLayer 封装 + 弹幕渲染层
     └── Profile/  个人中心（含外观切换）
+BiliGlassUITests/ XCUITest 回归用例（左滑返回 / 底栏可点）
 ```
